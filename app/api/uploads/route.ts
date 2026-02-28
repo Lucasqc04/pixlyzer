@@ -1,3 +1,5 @@
+
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { UploadService } from '@/lib/services/uploadService';
 import { UsageService } from '@/lib/services/usageService';
@@ -13,7 +15,6 @@ export async function GET(request: NextRequest) {
         { error: 'UNAUTHORIZED', message: 'Authentication required' },
         { status: 401 }
       );
-    export const runtime = 'nodejs';
     }
 
     const { searchParams } = new URL(request.url);
