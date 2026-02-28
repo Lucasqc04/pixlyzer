@@ -242,14 +242,14 @@ export default function ApiKeysPage() {
           </p>
           <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
             <pre className="text-sm">
-              <code>{`curl -X POST https://pixlyzer.com/api/v1/ocr \\
-  -H "x-api-key: sk_live_sua_chave_aqui" \\
+              <code>{`curl -X POST ${(process.env.NEXT_PUBLIC_APP_URL || 'https://pixlyzer.vercel.app')}/api/v1/ocr \
+  -H "x-api-key: sk_live_sua_chave_aqui" \
   -F "file=@comprovante.jpg"`}</code>
             </pre>
           </div>
           <p className="text-gray-600">
             Consulte a{' '}
-            <a href="/docs" className="text-blue-600 hover:underline">
+            <a href={(process.env.NEXT_PUBLIC_APP_URL || 'https://pixlyzer.vercel.app') + '/docs'} className="text-blue-600 hover:underline">
               documentação completa
             </a>{' '}
             para mais detalhes.

@@ -1,3 +1,4 @@
+"use client";
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -39,12 +40,30 @@ export default function HomePage() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <Link href="/" className="text-2xl font-bold text-gray-900">
             Pixlyzer
           </Link>
-          <nav className="flex items-center gap-6">
-            <Link href="/docs" className="text-gray-600 hover:text-gray-900">
+          {/* Mobile menu button */}
+          <div className="flex md:hidden">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              aria-controls="mobile-menu"
+              aria-expanded="false"
+              onClick={() => {
+                const menu = document.getElementById('mobile-menu');
+                if (menu) menu.classList.toggle('hidden');
+              }}
+            >
+              <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+          </div>
+          {/* Desktop nav */}
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href={process.env.NEXT_PUBLIC_APP_URL + '/docs'} className="text-gray-600 hover:text-gray-900">
               Documentação
             </Link>
             <Link href="/pricing" className="text-gray-600 hover:text-gray-900">
@@ -55,6 +74,23 @@ export default function HomePage() {
             </Link>
             <Link href="/register">
               <Button>Começar Grátis</Button>
+            </Link>
+          </nav>
+        </div>
+        {/* Mobile nav */}
+        <div className="md:hidden hidden" id="mobile-menu">
+          <nav className="px-4 pt-2 pb-4 space-y-2 bg-white border-t">
+            <Link href={process.env.NEXT_PUBLIC_APP_URL + '/docs'} className="block text-gray-600 hover:text-gray-900 py-2">
+              Documentação
+            </Link>
+            <Link href="/pricing" className="block text-gray-600 hover:text-gray-900 py-2">
+              Preços
+            </Link>
+            <Link href="/login" className="block">
+              <Button variant="ghost" className="w-full text-left">Login</Button>
+            </Link>
+            <Link href="/register" className="block">
+              <Button className="w-full text-left">Começar Grátis</Button>
             </Link>
           </nav>
         </div>

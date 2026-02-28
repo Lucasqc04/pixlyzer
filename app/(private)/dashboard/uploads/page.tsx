@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,6 +70,9 @@ export default function UploadsPage() {
   const [exportType, setExportType] = useState<'csv'|'xlsx'|'json'|'pdf'>('csv');
   const [period, setPeriod] = useState('month');
   const [dateRange, setDateRange] = useState<[Date, Date]>(() => [startOfMonth(new Date()), endOfMonth(new Date())]);
+  // Estado para modal de confirmação de exclusão
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [uploadToDelete, setUploadToDelete] = useState<Upload | null>(null);
 
   const PERIODS = [
     { key: 'day', label: 'Dia', getRange: () => [startOfDay(new Date()), endOfDay(new Date())] as [Date, Date] },
@@ -146,16 +150,40 @@ export default function UploadsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
-
       if (response.ok) {
         await fetchUploads();
-        alert('Comprovante atualizado com sucesso!');
+        toast.success('Comprovante atualizado com sucesso!');
       } else {
-        alert('Erro ao atualizar comprovante');
+        toast.error('Erro ao atualizar comprovante');
       }
     } catch (error) {
       console.error('Error saving changes:', error);
-      alert('Erro ao salvar alterações');
+      toast.error('Erro ao salvar alterações');
+    }
+  };
+
+  const handleDeleteClick = (upload: Upload) => {
+    setUploadToDelete(upload);
+    setDeleteModalOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!uploadToDelete) return;
+    try {
+      const response = await fetch(`/api/uploads/${uploadToDelete.id}`, {
+        method: 'DELETE',
+      });
+      if (response.ok) {
+        await fetchUploads();
+        toast.success('Excluído com sucesso!');
+      } else {
+        toast.error('Erro ao excluir comprovante');
+      }
+    } catch (error) {
+      toast.error('Erro ao excluir comprovante');
+    } finally {
+      setDeleteModalOpen(false);
+      setUploadToDelete(null);
     }
   };
 
@@ -485,6 +513,29 @@ export default function UploadsPage() {
                             >
                               <Edit2 className="h-4 w-4" />
                             </Button>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => handleDeleteClick(upload)}
+                            >
+                              <span className="sr-only">Excluir</span>
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-4 w-4">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                              </svg>
+                            </Button>
+                                {/* Modal de confirmação de exclusão */}
+                                {deleteModalOpen && (
+                                  <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/40">
+                                    <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md">
+                                      <h2 className="text-lg font-bold mb-4 text-red-600">Excluir comprovante</h2>
+                                      <p className="mb-6 text-gray-700">Tem certeza que deseja excluir este comprovante? <br /><span className="font-semibold">Essa ação não pode ser desfeita.</span></p>
+                                      <div className="flex gap-2 justify-end">
+                                        <Button variant="outline" onClick={() => { setDeleteModalOpen(false); setUploadToDelete(null); }}>Cancelar</Button>
+                                        <Button variant="destructive" onClick={handleConfirmDelete}>Excluir</Button>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
                           </div>
                         </td>
                       </tr>

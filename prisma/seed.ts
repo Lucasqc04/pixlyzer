@@ -10,10 +10,10 @@ async function main() {
   const passwordHash = await bcrypt.hash('teste123', 12);
 
   const user = await prisma.user.upsert({
-    where: { email: 'teste@pixlyzer.com' },
+    where: { email: 'teste@pixlyzer.vercel.app' },
     update: {},
     create: {
-      email: 'teste@pixlyzer.com',
+      email: 'teste@pixlyzer.vercel.app',
       passwordHash,
       plan: 'FREE',
     },

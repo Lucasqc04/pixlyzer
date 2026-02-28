@@ -392,4 +392,4 @@ MIT
 
 ## Suporte
 
-Para suporte, envie um email para suporte@pixlyzer.com
+Para suporte, envie um email para suporte@pixlyzer.vercel.app

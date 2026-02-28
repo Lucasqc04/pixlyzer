@@ -14,6 +14,7 @@ import {
   Menu,
   X,
   Zap,
+  FileText,
 } from 'lucide-react';
 
 interface User {
@@ -68,6 +69,7 @@ export default function PrivateLayout({
   const navItems = [
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/dashboard/upload', label: 'Upload', icon: Upload },
+    { href: '/dashboard/uploads', label: 'Histórico de Uploads', icon: FileText },
     { href: '/dashboard/api-keys', label: 'API Keys', icon: Key },
     { href: '/dashboard/payments', label: 'Pagamentos', icon: CreditCard },
     { href: '/dashboard/upgrade', label: 'Upgrade', icon: Zap },

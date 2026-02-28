@@ -1,5 +1,6 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -29,16 +30,21 @@ export default function UploadDetailModal({ isOpen, upload, onClose, onSave }: U
   const [formData, setFormData] = useState<Partial<Upload> | null>(null);
   const [loading, setLoading] = useState(false);
 
-  if (isOpen && !formData && upload) {
-    setFormData({
-      valor: upload.valor,
-      data: upload.data,
-      banco: upload.banco,
-      pagador: upload.pagador,
-      recebedor: upload.recebedor,
-      txId: upload.txId,
-    });
-  }
+
+  useEffect(() => {
+    if (isOpen && upload) {
+      setFormData({
+        valor: upload.valor,
+        data: upload.data,
+        banco: upload.banco,
+        pagador: upload.pagador,
+        recebedor: upload.recebedor,
+        txId: upload.txId,
+      });
+    } else if (!isOpen) {
+      setFormData(null);
+    }
+  }, [isOpen, upload]);
 
   const handleChange = (field: string, value: string | number | null) => {
     if (!formData) return;
@@ -53,7 +59,10 @@ export default function UploadDetailModal({ isOpen, upload, onClose, onSave }: U
     setLoading(true);
     try {
       await onSave(upload.id, formData);
+      toast.success('Comprovante atualizado com sucesso!');
       onClose();
+    } catch {
+      toast.error('Erro ao salvar alterações');
     } finally {
       setLoading(false);
     }

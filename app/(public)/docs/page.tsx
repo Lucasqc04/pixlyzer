@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Code, FileText, Key, AlertTriangle, CheckCircle } from 'lucide-react';
 
 export default function DocsPage() {
+  const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://pixlyzer.vercel.app';
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -81,7 +82,7 @@ export default function DocsPage() {
               <TabsContent value="curl">
                 <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
                   <pre className="text-sm">
-                    <code>{`curl -X POST https://pixlyzer.com/api/v1/ocr \\
+                    <code>{`curl -X POST ${BASE_URL}/api/v1/ocr \\
           -H "x-api-key: SUA_API_KEY_AQUI" \\
           -F "file=@comprovante.jpg"`}</code>
                   </pre>
@@ -92,18 +93,18 @@ export default function DocsPage() {
                 <div className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto">
                   <pre className="text-sm">
                     <code>{`const formData = new FormData();
-        formData.append('file', fileInput.files[0]);
+formData.append('file', fileInput.files[0]);
 
-        const response = await fetch('https://pixlyzer.com/api/v1/ocr', {
-          method: 'POST',
-          headers: {
-            'x-api-key': 'SUA_API_KEY_AQUI',
-          },
-          body: formData,
-        });
+const response = await fetch('${BASE_URL}/api/v1/ocr', {
+  method: 'POST',
+  headers: {
+    'x-api-key': 'SUA_API_KEY_AQUI',
+  },
+  body: formData,
+});
 
-        const data = await response.json();
-        console.log(data);`}</code>
+const data = await response.json();
+console.log(data);`}</code>
                   </pre>
                 </div>
               </TabsContent>
@@ -113,13 +114,13 @@ export default function DocsPage() {
                   <pre className="text-sm">
                     <code>{`import requests
 
-        url = 'https://pixlyzer.com/api/v1/ocr'
-        headers = {'x-api-key': 'SUA_API_KEY_AQUI'}
-        files = {'file': open('comprovante.jpg', 'rb')}
+url = '${BASE_URL}/api/v1/ocr'
+headers = {'x-api-key': 'SUA_API_KEY_AQUI'}
+files = {'file': open('comprovante.jpg', 'rb')}
 
-        response = requests.post(url, headers=headers, files=files)
-        data = response.json()
-        print(data)`}</code>
+response = requests.post(url, headers=headers, files=files)
+data = response.json()
+print(data)`}</code>
                   </pre>
                 </div>
               </TabsContent>
