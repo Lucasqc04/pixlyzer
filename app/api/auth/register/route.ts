@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
         { error: 'VALIDATION_ERROR', details: validation.error.errors },
         { status: 400 }
       );
+    export const runtime = 'nodejs';
     }
 
     // Criar usuário

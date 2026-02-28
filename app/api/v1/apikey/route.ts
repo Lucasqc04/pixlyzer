@@ -11,6 +11,7 @@ export async function GET(request: NextRequest) {
         { error: 'UNAUTHORIZED', message: 'Authentication required' },
         { status: 401 }
       );
+    export const runtime = 'nodejs';
     }
 
     const apiKeys = await ApiKeyService.getUserApiKeys(userId);
