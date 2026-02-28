@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 // import { AuthService } from '@/lib/services/authService';
 import { jwtVerify } from 'jose';
-import { ApiKeyService } from '@/lib/services/apiKeyService';
 
 // Rotas públicas que não precisam de autenticação
 const publicRoutes = [
@@ -27,35 +26,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // Verificar se é a API pública (usa API Key)
+  // A validação da API Key é feita na rota, não no middleware
+  // porque o middleware roda no Edge Runtime que não suporta Prisma
   if (apiPublicRoutes.some((route) => pathname.startsWith(route))) {
-    const apiKey = request.headers.get('x-api-key');
-
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API_KEY_REQUIRED', message: 'x-api-key header is required' },
-        { status: 401 }
-      );
-    }
-
-    const validation = await ApiKeyService.validateApiKey(apiKey);
-
-    if (!validation.valid) {
-      const status = validation.error === 'LIMIT_EXCEEDED' ? 429 : 401;
-      return NextResponse.json(
-        { error: validation.error, message: 'Invalid or expired API key' },
-        { status }
-      );
-    }
-
-    // Adicionar userId no header para as rotas
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set('x-user-id', validation.userId!);
-
-    return NextResponse.next({
-      request: {
-        headers: requestHeaders,
-      },
-    });
+    return NextResponse.next();
   }
 
   // Verificar autenticação para rotas privadas
