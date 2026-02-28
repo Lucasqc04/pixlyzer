@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -56,8 +57,8 @@ export default function PricingPage() {
       {/* Header */}
       <header className="bg-white shadow-sm sticky top-0 z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <Link href="/" className="text-2xl font-bold text-gray-900 flex-shrink-0">
-            Pixlyzer
+          <Link href="/" className="flex-shrink-0">
+            <Image src="/logo.png" alt="Pixlyzer Logo" width={40} height={40} />
           </Link>
           <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto items-center">
             <Link href="/login" className="text-gray-600 hover:text-gray-900 w-full sm:w-auto text-center py-2 sm:py-0">

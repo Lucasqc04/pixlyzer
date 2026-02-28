@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
@@ -13,8 +14,8 @@ export default function DocsPage() {
       {/* Header */}
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
-            Pixlyzer
+          <Link href="/">
+            <Image src="/logo.png" alt="Pixlyzer Logo" width={40} height={40} />
           </Link>
           <nav className="flex gap-4">
             <Link href="/docs" className="text-blue-600 font-medium">

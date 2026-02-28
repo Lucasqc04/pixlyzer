@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import {
   LayoutDashboard,
@@ -88,9 +89,9 @@ export default function PrivateLayout({
     <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar - Desktop */}
       <aside className="hidden lg:flex flex-col w-64 bg-white border-r">
-        <div className="p-6">
-          <Link href="/dashboard" className="text-2xl font-bold text-gray-900">
-            Pixlyzer
+        <div className="p-6 flex items-center justify-center">
+          <Link href="/dashboard">
+            <Image src="/logo.png" alt="Pixlyzer Logo" width={50} height={50} />
           </Link>
         </div>
 
@@ -136,8 +137,8 @@ export default function PrivateLayout({
           />
           <aside className="absolute left-0 top-0 bottom-0 w-64 bg-white">
             <div className="p-6 flex justify-between items-center">
-              <Link href="/dashboard" className="text-2xl font-bold text-gray-900">
-                Pixlyzer
+              <Link href="/dashboard">
+                <Image src="/logo.png" alt="Pixlyzer Logo" width={40} height={40} />
               </Link>
               <button onClick={() => setSidebarOpen(false)}>
                 <X className="h-6 w-6" />
@@ -180,8 +181,8 @@ export default function PrivateLayout({
       <main className="flex-1 overflow-auto">
         {/* Mobile Header */}
         <header className="lg:hidden bg-white border-b px-4 py-3 flex justify-between items-center">
-          <Link href="/dashboard" className="text-xl font-bold text-gray-900">
-            Pixlyzer
+          <Link href="/dashboard">
+            <Image src="/logo.png" alt="Pixlyzer Logo" width={40} height={40} />
           </Link>
           <button onClick={() => setSidebarOpen(true)}>
             <Menu className="h-6 w-6" />

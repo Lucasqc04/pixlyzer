@@ -1,5 +1,6 @@
 "use client";
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -41,8 +42,8 @@ export default function HomePage() {
       {/* Header */}
       <header className="bg-white/80 backdrop-blur-sm sticky top-0 z-50 border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
-            Pixlyzer
+          <Link href="/">
+            <Image src="/logo.png" alt="Pixlyzer Logo" width={40} height={40} />
           </Link>
           {/* Mobile menu button */}
           <div className="flex md:hidden">
@@ -244,7 +245,10 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
-              <h3 className="text-white font-bold text-lg mb-4">Pixlyzer</h3>
+              <div className="flex items-center gap-2 mb-4">
+                <Image src="/logo.png" alt="Pixlyzer Logo" width={32} height={32} />
+                <h3 className="text-white font-bold text-lg">Pixlyzer</h3>
+              </div>
               <p className="text-sm">
                 Organizador inteligente de comprovantes PIX com OCR e API pública.
               </p>
