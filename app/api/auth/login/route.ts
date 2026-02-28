@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logErrorSafe } from '@/lib/utils/logging';
 import { AuthService, loginSchema } from '@/lib/services/authService';
 
 export async function POST(request: NextRequest) {
@@ -38,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('Login error:', error);
+    logErrorSafe('Login error:', error);
 
     return NextResponse.json(
       { error: 'AUTH_ERROR', message: error.message || 'Authentication failed' },

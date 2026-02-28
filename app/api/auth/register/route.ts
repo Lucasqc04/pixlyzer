@@ -1,6 +1,7 @@
 
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
+import { logErrorSafe } from '@/lib/utils/logging';
 import { AuthService, registerSchema } from '@/lib/services/authService';
 import { ApiKeyService } from '@/lib/services/apiKeyService';
 
@@ -44,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: any) {
-    console.error('Register error:', error);
+    logErrorSafe('Register error:', error);
 
     return NextResponse.json(
       { error: 'REGISTER_ERROR', message: error.message || 'Registration failed' },

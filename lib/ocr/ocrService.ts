@@ -6,6 +6,7 @@ import tesseract from 'node-tesseract-ocr';
 import { OCRResult, OCROptions, OCRError } from '@/types/pix';
 import { normalizeText } from './normalizeText';
 import fetch from 'node-fetch';
+import { logSafe, logErrorSafe } from '@/lib/utils/logging';
 
 /**
  * OCR Service - Processamento de imagens usando Tesseract nativo
@@ -87,7 +88,7 @@ export async function processImage(
         confidence: typeof result.confidence === 'number' ? result.confidence : 100,
       };
     } catch (error: any) {
-      console.error('[OCRService] OCR server error:', error);
+      logErrorSafe('[OCRService] OCR server error:', error);
       if (error instanceof OCRError) throw error;
       throw new OCRError(
         `OCR server request failed: ${error.message}`,
@@ -98,7 +99,7 @@ export async function processImage(
   }
 
   // Fallback: processamento local
-  console.log('[OCRService] Starting local OCR processing...');
+  logSafe('[OCRService] Starting local OCR processing...');
   try {
     const mimeType = validateImageBuffer(imageBuffer);
     const tempFilePath = await writeTempImageFile(imageBuffer, mimeType);
@@ -111,7 +112,7 @@ export async function processImage(
         }),
         opts.timeout
       );
-      console.log('[OCRService] Local OCR completed.');
+      logSafe('[OCRService] Local OCR completed.');
       const normalizedText = normalizeText(rawText);
       return {
         text: normalizedText,
@@ -182,7 +183,7 @@ function validateImageBuffer(buffer: Buffer): string {
     );
   }
 
-  console.log(`[OCRService] Image validated: ${mimeType}, ${buffer.length} bytes`);
+  logSafe(`[OCRService] Image validated: ${mimeType}, ${buffer.length} bytes`);
 
   return mimeType;
 }
@@ -291,11 +292,11 @@ export async function processMultipleImages(
   buffers: Buffer[],
   options: OCROptions = {}
 ): Promise<OCRResult[]> {
-  console.log(`[OCRService] Processing ${buffers.length} images in parallel...`);
+  logSafe(`[OCRService] Processing ${buffers.length} images in parallel...`);
 
   const promises = buffers.map((buffer, index) => 
     processImage(buffer, options).catch((error) => {
-      console.error(`[OCRService] Error processing image ${index}:`, error);
+      logErrorSafe(`[OCRService] Error processing image ${index}:`, error);
       // Retornar resultado vazio em caso de erro
       return {
         text: '',

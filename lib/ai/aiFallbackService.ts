@@ -6,6 +6,7 @@ import { iaRateLimit } from './aiRateLimiter';
 import { GroqProvider } from './providers/groqProvider';
 import { OpenRouterProvider } from './providers/openrouterProvider';
 import { HuggingFaceProvider } from './providers/huggingfaceProvider';
+import { logSafe } from '@/lib/utils/logging';
 
 /**
  * AI Fallback Service - Orquestra múltiplos providers de IA
@@ -40,16 +41,16 @@ export async function extractWithAIFallback(text: string): Promise<ParsedPix> {
   for (const ProviderClass of PROVIDER_ORDER) {
     try {
       const provider = new ProviderClass();
-      console.log(`[AIFallback] Trying ${provider.name}...`);
+      logSafe(`[AIFallback] Trying ${provider.name}...`);
 
       const result = await iaRateLimit(() => provider.extract(text));
       // Se confidence for aceitável, retornar
       if (result.confidence >= CONFIDENCE_THRESHOLD) {
-        console.log(`[AIFallback] ${provider.name} success with confidence: ${result.confidence}`);
+        logSafe(`[AIFallback] ${provider.name} success with confidence: ${result.confidence}`);
         return result;
       }
 
-      console.log(`[AIFallback] ${provider.name} confidence too low: ${result.confidence}`);
+      logSafe(`[AIFallback] ${provider.name} confidence too low: ${result.confidence}`);
 
     } catch (error: any) {
       const errorMsg = `[${ProviderClass.name}] ${error.message}`;
@@ -62,7 +63,7 @@ export async function extractWithAIFallback(text: string): Promise<ParsedPix> {
 
   // Se chegou aqui, nenhum provider retornou resultado bom
   // Usar SimpleAI como fallback final
-  console.log(`[AIFallback] Todos os providers externos falharam ou retornaram baixa confiança. Usando SimpleAI como fallback final. Errors:`, errors);
+  logSafe(`[AIFallback] Todos os providers externos falharam ou retornaram baixa confiança. Usando SimpleAI como fallback final. Errors:`, errors);
   return extractWithSimpleAI(text);
 }
 

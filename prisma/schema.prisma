@@ -50,6 +50,7 @@ model Upload {
   rawText   String?
   fileName  String?
   fileType  String?
+  imageData String?  @db.Text
   createdAt DateTime @default(now())
   
   // Relations

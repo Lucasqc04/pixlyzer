@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, User, Lock, Bell, CheckCircle } from 'lucide-react';
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -17,6 +19,10 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleUpgrade = () => {
+    router.push('/dashboard/upgrade');
+  };
 
   const handlePasswordChange = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,7 +102,7 @@ export default function SettingsPage() {
                   <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
                     FREE
                   </span>
-                  <Button variant="link" size="sm" className="text-blue-600">
+                  <Button variant="link" size="sm" className="text-blue-600" onClick={handleUpgrade}>
                     Fazer Upgrade
                   </Button>
                 </div>

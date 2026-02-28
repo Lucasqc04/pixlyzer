@@ -1,6 +1,7 @@
 import { ParsedPix, BankParser } from '@/types/pix';
 import { calculateConfidence } from '../confidenceService';
 import { extractValor, extractData, extractTxId, extractNome } from './bancoTemplate';
+import { normalizeBankName } from '../bankNormalization';
 
 /**
  * Parser para comprovantes CELCOIN IP S.A.
@@ -21,7 +22,7 @@ export const celcoinParser: BankParser = {
     const recebedor = extractNome(text, 'para') || extractNome(text, 'favorecido');
 
     const result: ParsedPix = {
-      banco: this.bankName,
+      banco: normalizeBankName(this.bankName) || 'DESCONHECIDO',
       valor,
       data,
       pagador,

@@ -36,19 +36,21 @@ export abstract class BaseAIProvider implements AIProvider {
     return `Extraia os seguintes campos do texto de um comprovante PIX abaixo e retorne APENAS um JSON válido:
 
 Campos a extrair:
-- banco: nome do banco (string)
+- banco: nome do BANCO DO PAGADOR (quem enviou, não quem recebeu) - string
 - valor: valor da transação em reais (número, ex: 150.50)
 - data: data da transação no formato YYYY-MM-DD (string)
-- pagador: nome de quem pagou (string)
+- pagador: nome de quem pagou/enviou (string)
 - recebedor: nome de quem recebeu (string)
-- txId: identificador da transação PIX (string, geralmente 20-35 caracteres alfanuméricos)
+- txId: identificador da transação PIX (string, geralmente 20-35 caracteres alfanuméricos começando com E)
 
-Regras:
+Regras IMPORTANTES:
 1. Retorne APENAS o JSON, sem explicações adicionais
 2. Use null para campos não encontrados
-3. O valor deve ser um número (remova R$ e pontos de milhar)
+3. O valor deve ser um número (remova R$ e pontos de milhar, preservando centavos. Ex: R$ 150,00 = 150, R$ 150,50 = 150.50)
 4. A data deve estar no formato YYYY-MM-DD
-5. O txId deve estar em maiúsculas
+5. O txId deve estar em maiúsculas e está geralmente no formato "E" + 20-34 caracteres alfanuméricos
+6. O BANCO é o banco do PAGADOR (origem), não a instituição de destino
+7. Procure por keywords como: "Instituição:" + variações do banco do pagador (NU PAGAMENTOS, BCO DO BRASIL, ITAU, NUBANK, etc)
 
 Texto do comprovante:
 ---
@@ -57,12 +59,12 @@ ${text.substring(0, 3000)}
 
 Responda apenas com JSON válido no formato:
 {
-  "banco": "...",
+  "banco": "BANCO DO PAGADOR",
   "valor": 150.50,
   "data": "2024-01-15",
-  "pagador": "...",
-  "recebedor": "...",
-  "txId": "..."
+  "pagador": "NOME DO PAGADOR",
+  "recebedor": "NOME DO RECEBEDOR",
+  "txId": "E..."
 }`;
   }
 

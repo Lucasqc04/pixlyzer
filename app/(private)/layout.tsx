@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   X,
+  Zap,
 } from 'lucide-react';
 
 interface User {
@@ -69,6 +70,7 @@ export default function PrivateLayout({
     { href: '/dashboard/upload', label: 'Upload', icon: Upload },
     { href: '/dashboard/api-keys', label: 'API Keys', icon: Key },
     { href: '/dashboard/payments', label: 'Pagamentos', icon: CreditCard },
+    { href: '/dashboard/upgrade', label: 'Upgrade', icon: Zap },
     { href: '/settings', label: 'Configurações', icon: Settings },
   ];
 

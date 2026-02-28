@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaguebitService } from '@/lib/services/paguebitService';
+import { logErrorSafe } from '@/lib/utils/logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +20,7 @@ export async function GET(request: NextRequest) {
       data: payments,
     });
   } catch (error: any) {
-    console.error('Get payments error:', error);
+    logErrorSafe('Get payments error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to fetch payments' },

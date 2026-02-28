@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,6 @@ import {
   Zap,
   ArrowRight,
   Loader2,
-  CheckCircle,
 } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -42,25 +41,14 @@ interface Upload {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const showUpgrade = searchParams.get('upgrade') === 'true';
 
   const [stats, setStats] = useState<Stats | null>(null);
   const [recentUploads, setRecentUploads] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [paymentData, setPaymentData] = useState<any>(null);
-  const [creatingPayment, setCreatingPayment] = useState(false);
 
   useEffect(() => {
     fetchData();
   }, []);
-
-  useEffect(() => {
-    if (showUpgrade) {
-      handleUpgrade();
-    }
-  }, [showUpgrade]);
 
   const fetchData = async () => {
     try {
@@ -75,25 +63,6 @@ export default function DashboardPage() {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleUpgrade = async () => {
-    setCreatingPayment(true);
-    try {
-      const response = await fetch('/api/v1/payments/create-pro', {
-        method: 'POST',
-      });
-      const data = await response.json();
-
-      if (data.success) {
-        setPaymentData(data.data);
-        setShowPaymentModal(true);
-      }
-    } catch (error) {
-      console.error('Error creating payment:', error);
-    } finally {
-      setCreatingPayment(false);
     }
   };
 
@@ -137,14 +106,9 @@ export default function DashboardPage() {
             </span>
             <Button
               size="sm"
-              onClick={handleUpgrade}
-              disabled={creatingPayment}
+              onClick={() => router.push('/dashboard/upgrade')}
             >
-              {creatingPayment ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Upgrade PRO'
-              )}
+              Upgrade PRO
             </Button>
           </AlertDescription>
         </Alert>
@@ -268,58 +232,6 @@ export default function DashboardPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Payment Modal */}
-      {showPaymentModal && paymentData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CheckCircle className="h-6 w-6 text-green-500" />
-                Pagamento Criado
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-gray-600">
-                Escaneie o QR Code abaixo com seu aplicativo bancário para completar o pagamento.
-              </p>
-
-              {paymentData.qrCodeUrl && (
-                <div className="flex justify-center">
-                  <img
-                    src={paymentData.qrCodeUrl}
-                    alt="QR Code"
-                    className="w-48 h-48"
-                  />
-                </div>
-              )}
-
-              {paymentData.qrCopyPaste && (
-                <div className="bg-gray-100 p-4 rounded-lg">
-                  <p className="text-sm font-medium mb-2">Pix Copia e Cola:</p>
-                  <code className="text-xs break-all">{paymentData.qrCopyPaste}</code>
-                </div>
-              )}
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowPaymentModal(false)}
-                >
-                  Fechar
-                </Button>
-                <Button
-                  className="flex-1"
-                  onClick={() => router.push('/dashboard/payments')}
-                >
-                  Ver Pagamentos
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
     </div>
   );
 }

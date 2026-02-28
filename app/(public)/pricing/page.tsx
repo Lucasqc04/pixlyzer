@@ -27,7 +27,7 @@ export default function PricingPage() {
         { text: 'Dashboard simples', included: true },
         { text: 'API pública', included: true },
         { text: 'OCR ilimitado', included: false },
-        { text: 'Suporte prioritário', included: false },
+   
       ],
       cta: 'Começar Grátis',
       href: '/register',
@@ -43,7 +43,7 @@ export default function PricingPage() {
         { text: 'Dashboard completo', included: true },
         { text: 'API pública', included: true },
         { text: 'OCR ilimitado', included: true },
-        { text: 'Suporte prioritário', included: true },
+ 
       ],
       cta: 'Fazer Upgrade',
       href: '#',
@@ -54,16 +54,16 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-gray-900">
+      <header className="bg-white shadow-sm sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <Link href="/" className="text-2xl font-bold text-gray-900 flex-shrink-0">
             Pixlyzer
           </Link>
-          <nav className="flex gap-4">
-            <Link href="/login" className="text-gray-600 hover:text-gray-900">
+          <nav className="flex flex-col sm:flex-row gap-2 sm:gap-4 w-full sm:w-auto items-center">
+            <Link href="/login" className="text-gray-600 hover:text-gray-900 w-full sm:w-auto text-center py-2 sm:py-0">
               Login
             </Link>
-            <Link href="/register" className="text-gray-600 hover:text-gray-900">
+            <Link href="/register" className="text-gray-600 hover:text-gray-900 w-full sm:w-auto text-center py-2 sm:py-0">
               Registrar
             </Link>
           </nav>
@@ -71,17 +71,17 @@ export default function PricingPage() {
       </header>
 
       {/* Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-16">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             Planos e Preços
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto">
             Escolha o plano ideal para suas necessidades. Comece grátis e faça upgrade quando precisar.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {plans.map((plan) => (
             <Card
               key={plan.name}
@@ -97,7 +97,7 @@ export default function PricingPage() {
                 <CardTitle className="text-2xl">{plan.name}</CardTitle>
                 <CardDescription>{plan.description}</CardDescription>
                 <div className="mt-4">
-                  <span className="text-4xl font-bold">
+                  <span className="text-3xl sm:text-4xl font-bold">
                     R$ {plan.price.toFixed(2)}
                   </span>
                   <span className="text-gray-500">/mês</span>

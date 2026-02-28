@@ -1,5 +1,7 @@
 import { ParsedPix, BankParser } from '@/types/pix';
 import { calculateConfidence } from '../confidenceService';
+import { parseValorString } from './bancoTemplate';
+import { normalizeBankName } from '../bankNormalization';
 
 /**
  * Parser específico para comprovantes Nubank
@@ -41,27 +43,34 @@ export const nubankParser: BankParser = {
    */
   parse(text: string): ParsedPix {
     // Normalização para facilitar regex e evitar problemas de OCR
-    const norm = text.replace(/\s+/g, ' ').toUpperCase();
+    const norm = text.replaceAll(/\s+/g, ' ').toUpperCase();
 
     // Valor: após "VALOR" ou "VALOR DO PAGAMENTO" ou "R$"
     let valor: number | undefined;
-    const valorMatch = norm.match(/VALOR(?: DO PAGAMENTO)?[:\s]*R?\$\s*([\d.,]+)/) || norm.match(/R?\$\s*([\d.,]+)/);
+    let valorMatch = /VALOR(?: DO PAGAMENTO)?[:\s]*R?\$\s*([\d.,]+)/.exec(norm);
+    valorMatch ??= /R?\$\s*([\d.,]+)/.exec(norm);
     if (valorMatch) {
-      valor = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
+      valor = parseValorString(valorMatch[1]);
     }
 
     // Data: "DD MMM AAAA - HH:MM:SS" ou "DD/MM/AAAA"
+    // Nota: OCR pode errar O por 0, então usamos \d ou [0O] para capturar
     let data: string | undefined;
     const meses: Record<string, string> = {
       'JAN': '01', 'FEV': '02', 'MAR': '03', 'ABR': '04',
       'MAI': '05', 'JUN': '06', 'JUL': '07', 'AGO': '08',
       'SET': '09', 'OUT': '10', 'NOV': '11', 'DEZ': '12',
     };
-    const dataExtMatch = norm.match(/(\d{2})\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(\d{4})/);
+    
+    // Tentar padrão "DD/MMM/AAAA" ou com O em vez de 0
+    const dataExtMatch = /[0O](\d)?\s+(JAN|FEV|MAR|ABR|MAI|JUN|JUL|AGO|SET|OUT|NOV|DEZ)\s+(\d{4})/.exec(norm);
     if (dataExtMatch) {
-      data = `${dataExtMatch[3]}-${meses[dataExtMatch[2]]}-${dataExtMatch[1]}`;
+      // Extrair dia (pode ter OCR ruim)
+      const dia = dataExtMatch[1] ? `0${dataExtMatch[1]}` : '01';
+      data = `${dataExtMatch[3]}-${meses[dataExtMatch[2]]}-${dia}`;
     } else {
-      const dataNumMatch = norm.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      // Tentar padrão "DD/MM/AAAA"
+      const dataNumMatch = /(\d{2})\/(\d{2})\/(\d{4})/.exec(norm);
       if (dataNumMatch) {
         data = `${dataNumMatch[3]}-${dataNumMatch[2]}-${dataNumMatch[1]}`;
       }
@@ -69,35 +78,35 @@ export const nubankParser: BankParser = {
 
     // TX ID: "ID DA TRANSAÇÃO:" (começa com E)
     let txId: string | undefined;
-    const txIdMatch = norm.match(/ID DA TRANSAÇÃO[:\s]+(E[0-9A-Z]{20,})/);
+    const txIdMatch = /ID DA TRANSAÇÃO[:\s]+(E[0-9A-Z]{20,})/.exec(norm);
     if (txIdMatch) {
       txId = txIdMatch[1];
     }
 
     // Pagador: após "ORIGEM NOME" até "INSTITUIÇÃO"/"AGÊNCIA"/"CONTA"/"CPF"/"CNPJ"
     let pagador: string | undefined;
-    const pagadorMatch = norm.match(/ORIGEM NOME[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= INSTITUIÇÃO| AGÊNCIA| CONTA| CPF| CNPJ|$)/);
+    const pagadorMatch = /ORIGEM NOME[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= INSTITUIÇÃO| AGÊNCIA| CONTA| CPF| CNPJ|$)/.exec(norm);
     if (pagadorMatch) {
       pagador = pagadorMatch[1].trim();
     } else {
       // fallback: "DE: NOME"
-      const deMatch = norm.match(/DE[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= INSTITUIÇÃO| AGÊNCIA| CONTA| CPF| CNPJ|$)/);
+      const deMatch = /DE[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= INSTITUIÇÃO| AGÊNCIA| CONTA| CPF| CNPJ|$)/.exec(norm);
       if (deMatch) pagador = deMatch[1].trim();
     }
 
     // Recebedor: após "DESTINO NOME" até "CNPJ"/"CPF"/"INSTITUIÇÃO"
     let recebedor: string | undefined;
-    const recebedorMatch = norm.match(/DESTINO NOME[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/);
+    const recebedorMatch = /DESTINO NOME[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/.exec(norm);
     if (recebedorMatch) {
       recebedor = recebedorMatch[1].trim();
     } else {
       // fallback: "PARA: NOME"
-      const paraMatch = norm.match(/PARA[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/);
+      const paraMatch = /PARA[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/.exec(norm);
       if (paraMatch) recebedor = paraMatch[1].trim();
     }
 
     const result: ParsedPix = {
-      banco: this.bankName,
+      banco: normalizeBankName(this.bankName) || 'DESCONHECIDO',
       valor,
       data,
       pagador,

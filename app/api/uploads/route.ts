@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { UploadService } from '@/lib/services/uploadService';
 import { UsageService } from '@/lib/services/usageService';
 import { ApiKeyService } from '@/lib/services/apiKeyService';
+import { logErrorSafe } from '@/lib/utils/logging';
 
 // GET - Listar uploads do usuário
 export async function GET(request: NextRequest) {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Get uploads error:', error);
+    logErrorSafe('Get uploads error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to fetch uploads' },
@@ -127,7 +128,7 @@ export async function POST(request: NextRequest) {
       }
     } catch (e) {
       // erro ao incrementar uso, mas não bloqueia o upload
-      console.error('Erro ao incrementar uso da API key:', e);
+      logErrorSafe('Erro ao incrementar uso da API key:', e);
     }
 
     return NextResponse.json({
@@ -135,7 +136,7 @@ export async function POST(request: NextRequest) {
       data: results,
     });
   } catch (error: any) {
-    console.error('Upload error:', error);
+    logErrorSafe('Upload error:', error);
 
     return NextResponse.json(
       { error: 'PROCESSING_ERROR', message: error.message || 'Failed to process file' },

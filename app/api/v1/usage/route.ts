@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { UsageService } from '@/lib/services/usageService';
+import { logErrorSafe } from '@/lib/utils/logging';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Get usage error:', error);
+    logErrorSafe('Get usage error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to fetch usage data' },

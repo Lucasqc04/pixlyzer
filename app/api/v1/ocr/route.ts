@@ -4,6 +4,7 @@ import { processImage } from '@/lib/ocr';
 import { orchestrateParse } from '@/lib/parser';
 import { ApiKeyService } from '@/lib/services/apiKeyService';
 import { OCRError } from '@/types/pix';
+import { logErrorSafe } from '@/lib/utils/logging';
 
 export const runtime = 'nodejs';
 
@@ -202,7 +203,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error: any) {
-    console.error('[API OCR] Error:', error);
+    logErrorSafe('[API OCR] Error:', error);
 
     // Não expor detalhes internos em produção
     const isDev = process.env.NODE_ENV === 'development';

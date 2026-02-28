@@ -1,8 +1,10 @@
-import { ParsedPix } from '@/types/pix';
+import type { ParsedPix } from '@/types/pix';
 import { bankParsers } from './banks';
-import { detectBank, detectBankWithConfidence } from './bankDetector';
-import { calculateConfidence, isConfidenceAcceptable, CONFIDENCE_THRESHOLD } from './confidenceService';
+import { detectBankWithConfidence } from './bankDetector';
+import { calculateConfidence, isConfidenceAcceptable } from './confidenceService';
 import { extractWithAIFallback, extractWithLocalAIOnly } from '@/lib/ai/aiFallbackService';
+import { normalizeBankName } from './bankNormalization';
+import { logSafe, logErrorSafe } from '@/lib/utils/logging';
 
 /**
  * Parser Orchestrator - Coordena todo o fluxo de parsing
@@ -38,25 +40,17 @@ export async function orchestrateParse(
   text: string, 
   options: ParseOptions = {}
 ): Promise<ParsedPix> {
-  console.log('[ParserOrchestrator] Starting parse...');
-  // Logar as linhas capturadas do comprovante
-  try {
-    const { extractLines } = await import('@/lib/ocr/normalizeText');
-    const lines = extractLines(text);
-    console.log('[ParserOrchestrator] Linhas capturadas:', lines);
-  } catch (e) {
-    console.warn('[ParserOrchestrator] Não foi possível logar as linhas capturadas:', e);
-  }
+  logSafe('[ParserOrchestrator] Started parsing...');
 
   // Opção 1: Usar banco específico
   if (options.specificBank) {
-    console.log(`[ParserOrchestrator] Using specific bank: ${options.specificBank}`);
+    logSafe(`[ParserOrchestrator] Using specific bank: ${options.specificBank}`);
     return parseWithSpecificBank(text, options.specificBank, options);
   }
 
   // Opção 2: Forçar uso de IA
   if (options.forceAI) {
-    console.log('[ParserOrchestrator] Force AI mode');
+    logSafe('[ParserOrchestrator] Force AI mode');
     if (options.localOnly) {
       return extractWithLocalAIOnly(text);
     }
@@ -65,16 +59,9 @@ export async function orchestrateParse(
 
   // Fluxo normal: detectar banco e usar parser específico
   const detectedBank = detectBankWithConfidence(text);
-  console.log(`[ParserOrchestrator] Detected bank: ${detectedBank.bank} (confidence: ${detectedBank.confidence})`);
-  if (detectedBank.matchedKeywords && detectedBank.matchedKeywords.length > 0) {
-    console.log(`[ParserOrchestrator] Palavras-chave encontradas para o banco:`, detectedBank.matchedKeywords);
-  } else {
-    console.log('[ParserOrchestrator] Nenhuma palavra-chave específica encontrada para o banco detectado.');
-  }
 
   // Se banco não detectado ou confiança baixa, ir direto para completar com IA
   if (detectedBank.bank === 'desconhecido' || detectedBank.confidence < 0.5) {
-    console.log('[ParserOrchestrator] Decisão: banco não detectado ou confiança baixa. Iniciando completion com IA.');
     if (options.localOnly) {
       return extractWithLocalAIOnly(text);
     }
@@ -98,7 +85,6 @@ export async function orchestrateParse(
   );
 
   if (!parser) {
-    console.log(`[ParserOrchestrator] Decisão: não existe parser para o banco ${detectedBank.bank}. Iniciando completion com IA.`);
     if (options.localOnly) {
       return extractWithLocalAIOnly(text);
     }
@@ -117,26 +103,43 @@ export async function orchestrateParse(
   }
 
   // Usar parser específico do banco
-  console.log(`[ParserOrchestrator] Decisão: parser encontrado para o banco ${parser.bankName}. Usando parser específico.`);
   const result = parser.parse(text);
+  
+  // Normalizar nome do banco extraído
+  const normalizedBanco = normalizeBankName(result.banco);
 
-  console.log(`[ParserOrchestrator] Resultado do parser:`, result);
-  console.log(`[ParserOrchestrator] Confiança do parser: ${result.confidence}`);
+  logSafe('[ParserOrchestrator] Bank parser result:', {
+    banco: normalizedBanco,
+    valor: result.valor,
+    data: result.data,
+    pagador: result.pagador,
+    recebedor: result.recebedor,
+    txId: result.txId,
+    confidence: result.confidence,
+  });
 
   // Se confidence for aceitável, retornar
   if (isConfidenceAcceptable(result.confidence)) {
-    console.log('[ParserOrchestrator] Decisão: confiança suficiente, retornando resultado do parser.');
-      console.log('[ParserOrchestrator] Resultado final retornado:', result);
-      return result;
+    const finalResult = { ...result, banco: normalizedBanco || 'DESCONHECIDO' };
+    logSafe('[ParserOrchestrator] Final result (bank parser):', {
+      banco: finalResult.banco,
+      valor: finalResult.valor,
+      data: finalResult.data,
+      pagador: finalResult.pagador,
+      recebedor: finalResult.recebedor,
+      txId: finalResult.txId,
+      confidence: finalResult.confidence,
+    });
+    return finalResult;
   }
 
   // Se confidence baixa, tentar completar com IA
-  console.log(`[ParserOrchestrator] Decisão: confiança baixa (${result.confidence}), tentando completar com IA.`);
+  result.banco = normalizedBanco || 'DESCONHECIDO';
   return completeWithAI(result, text, options);
 }
 
 /**
- * Completa um resultado de parsing tentando múltiplas IAsSistematicamente
+ * Completa um resultado de parsing tentando múltiplas IAs
  * até conseguir precision = 1 (todos os campos preenchidos)
  */
 async function completeWithAI(
@@ -148,60 +151,70 @@ async function completeWithAI(
   let attempts = 0;
   const maxAttempts = 3;
 
-  console.log('[ParserOrchestrator] Iniciando completion loop...');
-
   while (attempts < maxAttempts && !isComplete(current)) {
     attempts++;
-    console.log(`[ParserOrchestrator] Attempt ${attempts}/${maxAttempts} - Current completeness:`, {
-      banco: !!current.banco,
-      valor: !!current.valor,
-      data: !!current.data,
-      pagador: !!current.pagador,
-      recebedor: !!current.recebedor,
-      txId: !!current.txId,
-    });
 
     let aiResult: ParsedPix | null = null;
 
     try {
       if (attempts === 1 && !options.localOnly) {
         // Primeira tentativa: IA externa (Gemini, Groq, etc)
-        console.log('[ParserOrchestrator] Tentando IA externa...');
         aiResult = await extractWithAIFallback(text);
       } else if (attempts <= 2 && !options.localOnly) {
         // Segunda tentativa: SimpleAI
-        console.log('[ParserOrchestrator] Tentando IA local (SimpleAI)...');
         aiResult = extractWithLocalAIOnly(text);
       } else {
         // Se localOnly ou esgotou tentativas externas, usar SimpleAI
-        console.log('[ParserOrchestrator] Tentando SimpleAI...');
         aiResult = extractWithLocalAIOnly(text);
       }
-    } catch (error) {
-      console.warn(`[ParserOrchestrator] Erro na tentativa ${attempts}:`, (error as Error).message);
-      // Continuar para próxima tentativa
-      continue;
-    }
 
-    // Mesclar resultado atual com resultado da IA
-    if (aiResult) {
-      current = mergeResults(current, aiResult);
-      console.log(`[ParserOrchestrator] Após merge (attempt ${attempts}):`, {
-        confidence: current.confidence,
-        completeness: isComplete(current),
-      });
+      if (aiResult) {
+        const normalizedAIBanco = normalizeBankName(aiResult.banco) || 'DESCONHECIDO';
+        
+        logSafe('[ParserOrchestrator] AI result:', {
+          banco: normalizedAIBanco,
+          valor: aiResult.valor,
+          data: aiResult.data,
+          pagador: aiResult.pagador,
+          recebedor: aiResult.recebedor,
+          txId: aiResult.txId,
+          confidence: aiResult.confidence,
+        });
+
+        aiResult.banco = normalizedAIBanco;
+
+        current = mergeResults(current, aiResult);
+
+        logSafe('[ParserOrchestrator] Merge decision:', {
+          usedBank: current.banco,
+          usedValor: current.valor,
+          usedData: current.data,
+          usedPagador: current.pagador,
+          usedRecebedor: current.recebedor,
+          usedTxId: current.txId,
+          finalConfidence: current.confidence,
+        });
+      }
+    } catch (error) {
+      // Continuar para próxima tentativa
+      logErrorSafe('[ParserOrchestrator] Error in AI extraction:', error);
     }
 
     // Se conseguiu completar, sair do loop
     if (isComplete(current)) {
-      console.log('[ParserOrchestrator] Resultado completado com sucesso!');
       break;
     }
   }
 
-  if (!isComplete(current)) {
-    console.log('[ParserOrchestrator] Não foi possível completar todos os campos após', maxAttempts, 'tentativas');
-  }
+  logSafe('[ParserOrchestrator] Final result (after AI completion):', {
+    banco: current.banco,
+    valor: current.valor,
+    data: current.data,
+    pagador: current.pagador,
+    recebedor: current.recebedor,
+    txId: current.txId,
+    confidence: current.confidence,
+  });
 
   return current;
 }
@@ -252,7 +265,6 @@ function isComplete(result: ParsedPix): boolean {
 /**
  * Mescla resultados do parser específico com IA
  * Prioriza o parser, mas preenche campos faltantes com IA
- * Retorna confidence 1 se todos os campos estão preenchidos
  */
 function mergeResults(parserResult: ParsedPix, aiResult: ParsedPix): ParsedPix {
   const merged: ParsedPix = {
@@ -274,32 +286,7 @@ function mergeResults(parserResult: ParsedPix, aiResult: ParsedPix): ParsedPix {
     merged.confidence = calculateConfidence(merged);
   }
 
-  console.log(`[ParserOrchestrator] Merged result confidence: ${merged.confidence}`);
-
   return merged;
-}
-
-/**
- * Faz parsing apenas com detecção de banco (sem fallback IA)
- * Mais rápido, mas pode ter menor precisão
- */
-export function parseWithBankDetectionOnly(text: string): ParsedPix {
-  const detectedBank = detectBankWithConfidence(text);
-
-  if (detectedBank.bank === 'desconhecido') {
-    // Usar heurísticas genéricas
-    return extractWithLocalAIOnly(text);
-  }
-
-  const parser = bankParsers.find(
-    (p) => p.bankName.toLowerCase() === detectedBank.bank.toLowerCase()
-  );
-
-  if (!parser) {
-    return extractWithLocalAIOnly(text);
-  }
-
-  return parser.parse(text);
 }
 
 /**
@@ -308,11 +295,9 @@ export function parseWithBankDetectionOnly(text: string): ParsedPix {
 export function getParserStats(): {
   supportedBanks: string[];
   totalParsers: number;
-  confidenceThreshold: number;
 } {
   return {
     supportedBanks: bankParsers.map((p) => p.bankName),
     totalParsers: bankParsers.length,
-    confidenceThreshold: CONFIDENCE_THRESHOLD,
   };
 }

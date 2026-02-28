@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PaguebitService } from '@/lib/services/paguebitService';
+import { logSafe, logErrorSafe } from '@/lib/utils/logging';
 
 export async function POST(request: NextRequest) {
   try {
     const payload = await request.json();
 
-    console.log('Paguebit webhook received:', payload);
+    logSafe('Paguebit webhook received:', payload);
 
     // Verificar assinatura do webhook (se implementado pelo Paguebit)
     const signature = request.headers.get('x-paguebit-signature');
@@ -15,7 +16,7 @@ export async function POST(request: NextRequest) {
         signature
       );
       if (!isValid) {
-        console.error('Invalid webhook signature');
+        logErrorSafe('Invalid webhook signature');
         return NextResponse.json({ received: true }, { status: 200 });
       }
     }
@@ -32,7 +33,7 @@ export async function POST(request: NextRequest) {
     // Sempre retornar 200 rapidamente
     return NextResponse.json({ received: true }, { status: 200 });
   } catch (error: any) {
-    console.error('Webhook error:', error);
+    logErrorSafe('Webhook error:', error);
 
     // Mesmo em caso de erro, retornar 200 para evitar retries
     return NextResponse.json({ received: true }, { status: 200 });

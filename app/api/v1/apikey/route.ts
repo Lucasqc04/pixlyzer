@@ -2,6 +2,7 @@
 export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { ApiKeyService } from '@/lib/services/apiKeyService';
+import { logErrorSafe } from '@/lib/utils/logging';
 
 // GET - Listar API keys do usuário
 export async function GET(request: NextRequest) {
@@ -22,7 +23,7 @@ export async function GET(request: NextRequest) {
       data: apiKeys,
     });
   } catch (error: any) {
-    console.error('Get API keys error:', error);
+    logErrorSafe('Get API keys error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to fetch API keys' },
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Create API key error:', error);
+    logErrorSafe('Create API key error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to create API key' },
@@ -95,7 +96,7 @@ export async function DELETE(request: NextRequest) {
       message: 'API key revoked successfully',
     });
   } catch (error: any) {
-    console.error('Revoke API key error:', error);
+    logErrorSafe('Revoke API key error:', error);
 
     return NextResponse.json(
       { error: 'SERVER_ERROR', message: error.message || 'Failed to revoke API key' },

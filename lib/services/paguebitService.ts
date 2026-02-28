@@ -2,7 +2,7 @@ import axios from 'axios';
 import { prisma } from '@/lib/prisma';
 import { $Enums } from '@prisma/client';
 
-const PAGUEBIT_API_URL = 'https://public-api-prod.paguebit.com/public-api/v1';
+const PAGUEBIT_API_URL = 'https://public-api-prod.paguebit.com';
 const PAGUEBIT_API_TOKEN = process.env.PAGUEBIT_API_TOKEN!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
 
@@ -41,14 +41,23 @@ export class PaguebitService {
 
   static async createPayment(data: PaguebitPaymentRequest): Promise<PaguebitPaymentResponse> {
     try {
+      // Garante que o webhookUrl seja uma URL absoluta válida
+      let webhookUrl = data.webhookUrl;
+      if (!webhookUrl) {
+        webhookUrl = APP_URL;
+        if (webhookUrl.endsWith('/')) webhookUrl = webhookUrl.slice(0, -1);
+        webhookUrl += '/api/v1/webhooks/paguebit';
+      }
+      const payload = {
+        amount: data.amount,
+        email: data.email,
+        observation: data.observation || 'Pagamento Pixlyzer',
+        webhookUrl,
+      };
+      console.log('Enviando para Paguebit:', payload);
       const response = await axios.post(
-        `${PAGUEBIT_API_URL}/payments`,
-        {
-          amount: data.amount,
-          email: data.email,
-          observation: data.observation || 'Pagamento Pixlyzer',
-          webhookUrl: data.webhookUrl || `${APP_URL}/api/v1/webhooks/paguebit`,
-        },
+        `${PAGUEBIT_API_URL}/api-public/payments`,
+        payload,
         { headers: this.getHeaders() }
       );
 
@@ -62,7 +71,7 @@ export class PaguebitService {
   static async getPayment(paymentId: string): Promise<PaguebitPaymentResponse> {
     try {
       const response = await axios.get(
-        `${PAGUEBIT_API_URL}/payments/${paymentId}`,
+        `${PAGUEBIT_API_URL}/api-public/payments/${paymentId}`,
         { headers: this.getHeaders() }
       );
 

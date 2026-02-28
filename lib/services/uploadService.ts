@@ -13,6 +13,7 @@ export interface UploadResult {
   rawText: string | null;
   fileName?: string | null;
   fileType?: string | null;
+  imageData?: string | null;
   createdAt: Date;
 }
 
@@ -44,9 +45,9 @@ export class UploadService {
     let valorNormalizado = parsedData.valor;
     if (valorNormalizado && valorNormalizado > 1000 && ocrResult.text) {
       // Procurar valor no texto original (ex: R$ 109,15)
-      const match = ocrResult.text.match(/R\$\s*([\d.]+,[\d]{2})/);
+      const match = /R\$\s*([\d.]+,\d{2})/.exec(ocrResult.text);
       if (match) {
-        const valorTexto = parseFloat(match[1].replace(/\./g, '').replace(',', '.'));
+        const valorTexto = Number.parseFloat(match[1].replaceAll('.', '').replace(',', '.'));
         // Se diferença for de 100x, corrigir
         if (Math.abs(valorNormalizado - valorTexto * 100) < 1) {
           valorNormalizado = valorNormalizado / 100;
@@ -66,6 +67,7 @@ export class UploadService {
         rawText: parsedData.rawText,
         fileName,
         fileType,
+        imageData: fileBuffer.toString('base64'),
       },
     });
 
@@ -78,6 +80,7 @@ export class UploadService {
       recebedor: upload.recebedor || undefined,
       txId: upload.txId || undefined,
       rawText: upload.rawText || '',
+      imageData: upload.imageData || undefined,
       createdAt: upload.createdAt,
     };
   }
@@ -128,6 +131,7 @@ export class UploadService {
       rawText: upload.rawText,
       fileName: upload.fileName,
       fileType: upload.fileType,
+      imageData: upload.imageData,
       createdAt: upload.createdAt,
     };
   }
@@ -164,6 +168,7 @@ export class UploadService {
       rawText: upload.rawText,
       fileName: upload.fileName,
       fileType: upload.fileType,
+      imageData: upload.imageData,
       createdAt: upload.createdAt,
     }));
   }

@@ -1,6 +1,7 @@
 import { ParsedPix, BankParser } from '@/types/pix';
 import { calculateConfidence } from '../confidenceService';
-import { extractValor, extractData, extractTxId, extractNome } from './bancoTemplate';
+import { parseValorString } from './bancoTemplate';
+import { normalizeBankName } from '../bankNormalization';
 
 /**
  * Parser para comprovantes PagBank/PagSeguro
@@ -21,45 +22,46 @@ export const pagbankParser: BankParser = {
 
   parse(text: string): ParsedPix {
     // Normalização para facilitar regex e evitar problemas de OCR
-    const norm = text.replace(/\s+/g, ' ').toUpperCase();
+    const norm = text.replaceAll(/\s+/g, ' ').toUpperCase();
 
     // Valor: "VALOR DO PAGAMENTO R$ X" ou "R$ X"
     let valor: number | undefined;
-    const valorMatch = norm.match(/VALOR DO PAGAMENTO[:\s]*R?\$\s*([\d.,]+)/) || norm.match(/R?\$\s*([\d.,]+)/);
+    let valorMatch = /VALOR DO PAGAMENTO[:\s]*R?\$\s*([\d.,]+)/.exec(norm);
+    valorMatch ??= /R?\$\s*([\d.,]+)/.exec(norm);
     if (valorMatch) {
-      valor = parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.'));
+      valor = parseValorString(valorMatch[1]);
     }
 
     // Data: "DD/MM/AAAA ÀS HH:MM:SS"
     let data: string | undefined;
-    const dataMatch = norm.match(/(\d{2})\/(\d{2})\/(\d{4})\s+ÀS\s+\d{2}:\d{2}:\d{2}/);
+    const dataMatch = /(\d{2})\/(\d{2})\/(\d{4})\s+ÀS\s+\d{2}:\d{2}:\d{2}/.exec(norm);
     if (dataMatch) {
       data = `${dataMatch[3]}-${dataMatch[2]}-${dataMatch[1]}`;
     }
 
     // TX ID: "CÓDIGO DA TRANSAÇÃO PIX" (começa com E)
     let txId: string | undefined;
-    const txIdMatch = norm.match(/CÓDIGO DA TRANSAÇÃO PIX[:\s]+(E[0-9A-Z]{20,})/);
+    const txIdMatch = /CÓDIGO DA TRANSAÇÃO PIX[:\s]+(E[0-9A-Z]{20,})/.exec(norm);
     if (txIdMatch) {
       txId = txIdMatch[1];
     }
 
     // Pagador: após "DE" até "CNPJ"/"CPF"/"INSTITUIÇÃO"
     let pagador: string | undefined;
-    const pagadorMatch = norm.match(/DE[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/);
+    const pagadorMatch = /DE[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/.exec(norm);
     if (pagadorMatch) {
       pagador = pagadorMatch[1].trim();
     }
 
     // Recebedor: após "PARA" até "CNPJ"/"CPF"/"INSTITUIÇÃO"
     let recebedor: string | undefined;
-    const recebedorMatch = norm.match(/PARA[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/);
+    const recebedorMatch = /PARA[:\s]+([A-ZÀ-ÖØ-öø-ÿ\s]+?)(?= CNPJ| CPF| INSTITUIÇÃO|$)/.exec(norm);
     if (recebedorMatch) {
       recebedor = recebedorMatch[1].trim();
     }
 
     const result: ParsedPix = {
-      banco: this.bankName,
+      banco: normalizeBankName(this.bankName) || 'DESCONHECIDO',
       valor,
       data,
       pagador,

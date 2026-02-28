@@ -3,8 +3,7 @@
  */
 
 export { 
-  orchestrateParse, 
-  parseWithBankDetectionOnly,
+  orchestrateParse,
   getParserStats 
 } from './parserOrchestrator';
 export type { ParseOptions } from './parserOrchestrator';

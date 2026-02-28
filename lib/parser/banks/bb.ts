@@ -1,6 +1,7 @@
 import { ParsedPix, BankParser } from '@/types/pix';
 import { calculateConfidence } from '../confidenceService';
-import { normalizeComprovanteText } from './bancoTemplate';
+import { normalizeComprovanteText, parseValorString } from './bancoTemplate';
+import { normalizeBankName } from '../bankNormalization';
 
 /**
  * Parser para comprovantes Banco do Brasil (BB)
@@ -21,29 +22,33 @@ export const bbParser: BankParser = {
   parse(text: string): ParsedPix {
     const norm = normalizeComprovanteText(text);
     // Valor: "Pix - QR Code R$ 120.00" ou "Pix Enviado R$ 120.00"
-    const valorMatch = norm.match(/PIX (?:-|ENVIADO)?\s*(?:QR CODE)?\s*R\$\s*([\d.,]+)/i);
-    const valor = valorMatch ? parseFloat(valorMatch[1].replace(/\./g, '').replace(',', '.')) : undefined;
+    const valorMatch = /PIX (?:-|ENVIADO)?\s*(?:QR CODE)?\s*R\$\s*([\d.,]+)/i.exec(norm);
+    const valor = valorMatch ? parseValorString(valorMatch[1]) : undefined;
 
     // Data: "Comprovante emitido em DD/MM/AAAA às HH:MM:SS"
-    const dataMatch = norm.match(/COMPROVANTE EMITIDO EM (\d{2}\/\d{2}\/\d{4})\s+AS?\s+(\d{2}:\d{2}:\d{2})/i);
-    const data = dataMatch ? `${dataMatch[1]} ${dataMatch[2]}` : undefined;
+    let data: string | undefined;
+    const dataMatch = /COMPROVANTE EMITIDO EM (\d{2})\/(\d{2})\/(\d{4})/i.exec(norm);
+    if (dataMatch) {
+      const [, dd, mm, yyyy] = dataMatch;
+      data = `${yyyy}-${mm}-${dd}`;
+    }
 
     // ID Pix: "ID: E..."
-    const idMatch = norm.match(/ID:\s*(E[0-9A-Z]{10,})/i);
-    const txId = idMatch ? idMatch[1].replace(/\s/g, '') : undefined;
+    const idMatch = /ID:\s*(E[0-9A-Z]{10,})/i.exec(norm);
+    const txId = idMatch ? idMatch[1].replaceAll(' ', '') : undefined;
 
     // Recebedor: após "Recebedor" até "CNPJ" ou "CPF"
     let recebedor;
-    const recMatch = norm.match(/RECEBEDOR\s+([A-Z\s]+?)(?=\s+(CNPJ|CPF|INSTITUICAO|$))/i);
+    const recMatch = /RECEBEDOR\s+([A-Z\s]+?)(?=\s+(CNPJ|CPF|INSTITUICAO|$))/i.exec(norm);
     if (recMatch) recebedor = recMatch[1].trim();
 
     // Pagador: após "Pagador" até "CPF" ou "Agencia"
     let pagador;
-    const pagMatch = norm.match(/PAGADOR\s+([A-Z\s]+?)(?=\s+(CPF|AGENCIA|INSTITUICAO|$))/i);
+    const pagMatch = /PAGADOR\s+([A-Z\s]+?)(?=\s+(CPF|AGENCIA|INSTITUICAO|$))/i.exec(norm);
     if (pagMatch) pagador = pagMatch[1].trim();
 
     const result: ParsedPix = {
-      banco: this.bankName,
+      banco: normalizeBankName(this.bankName) || 'DESCONHECIDO',
       valor,
       data,
       pagador,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { logErrorSafe } from '@/lib/utils/logging';
 import { PaguebitService } from '@/lib/services/paguebitService';
 import { prisma } from '@/lib/prisma';
 
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error: any) {
-    console.error('Create payment error:', error);
+    logErrorSafe('Create payment error:', error);
 
     return NextResponse.json(
       { error: 'PAYMENT_ERROR', message: error.message || 'Failed to create payment' },
