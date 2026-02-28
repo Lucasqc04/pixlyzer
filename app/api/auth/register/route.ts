@@ -1,3 +1,5 @@
+
+export const runtime = 'nodejs';
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthService, registerSchema } from '@/lib/services/authService';
 import { ApiKeyService } from '@/lib/services/apiKeyService';
@@ -13,7 +15,6 @@ export async function POST(request: NextRequest) {
         { error: 'VALIDATION_ERROR', details: validation.error.errors },
         { status: 400 }
       );
-    export const runtime = 'nodejs';
     }
 
     // Criar usuário
