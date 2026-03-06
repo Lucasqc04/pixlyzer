@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { logErrorSafe } from '@/lib/utils/logging';
-import { PaguebitService } from '@/lib/services/paguebitService';
+import { PaguebitService, PAYMENT_EXPIRATION_MS } from '@/lib/services/paguebitService';
 import { prisma } from '@/lib/prisma';
 
 export async function POST(request: NextRequest) {
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
         amount: payment.amount,
         qrCodeUrl: payment.qrCodeUrl,
         qrCopyPaste: payment.qrCopyPaste,
+        expiresAt: new Date(Date.now() + PAYMENT_EXPIRATION_MS).toISOString(),
       },
     });
   } catch (error: any) {

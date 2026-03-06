@@ -1,10 +1,15 @@
 import axios from 'axios';
+import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { $Enums } from '@prisma/client';
 
-const PAGUEBIT_API_URL = 'https://public-api-prod.paguebit.com';
+const PAGUEBIT_API_URL = 'https://public-api-prod.dominipay.com.br';
 const PAGUEBIT_API_TOKEN = process.env.PAGUEBIT_API_TOKEN!;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL!;
+const PAGUEBIT_WEBHOOK_SECRET = process.env.PAGUEBIT_WEBHOOK_SECRET;
+
+export const PAYMENT_EXPIRATION_MINUTES = 10;
+export const PAYMENT_EXPIRATION_MS = PAYMENT_EXPIRATION_MINUTES * 60 * 1000;
 
 export interface PaguebitPaymentRequest {
   amount: number;
@@ -82,6 +87,20 @@ export class PaguebitService {
     }
   }
 
+
+  static verifyWebhookSignature(payload: string, signature: string): boolean {
+    if (!PAGUEBIT_WEBHOOK_SECRET) {
+      return true;
+    }
+
+    const digest = crypto
+      .createHmac('sha256', PAGUEBIT_WEBHOOK_SECRET)
+      .update(payload)
+      .digest('hex');
+
+    return digest === signature;
+  }
+
   static async processWebhook(payload: PaguebitWebhookPayload): Promise<void> {
     const { id: paguebitPaymentId, status } = payload;
 
@@ -95,6 +114,16 @@ export class PaguebitService {
       return;
     }
 
+    const isExpired = Date.now() - new Date(payment.createdAt).getTime() > PAYMENT_EXPIRATION_MS;
+    if (status.toLowerCase() === 'approved' && isExpired) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { status: 'CANCELLED' },
+      });
+      console.warn(`Pagamento expirado ignorado: ${paguebitPaymentId}`);
+      return;
+    }
+
     // Atualizar status do pagamento
     await prisma.payment.update({
       where: { id: payment.id },
@@ -102,7 +131,7 @@ export class PaguebitService {
     });
 
     // Se o pagamento foi aprovado, atualizar plano do usuário
-    if (status === 'approved') {
+    if (status.toLowerCase() === 'approved') {
       await this.activateProPlan(payment.userId);
     }
   }
@@ -154,12 +183,5 @@ export class PaguebitService {
       where: { userId },
       orderBy: { createdAt: 'desc' },
     });
-  }
-
-  static verifyWebhookSignature(payload: string, signature: string): boolean {
-    // Em produção, implementar verificação de assinatura do webhook
-    // Isso depende da documentação específica do Paguebit
-    // Por enquanto, retornamos true
-    return true;
   }
 }

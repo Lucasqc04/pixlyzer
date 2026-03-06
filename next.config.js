@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
-    domains: ['public-api-prod.paguebit.com'],
+    domains: ['public-api-prod.dominipay.com.br'],
   },
   async headers() {
     return [
