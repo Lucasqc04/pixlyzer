@@ -1,13 +1,13 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { ErpService } from '@/lib/services/erpService';
+import { fail, ok } from '@/lib/apiResponse';
 
 export async function GET(request: NextRequest) {
   try {
     const userId = request.headers.get('x-user-id');
-    if (!userId) return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-    const data = await ErpService.listEntities(userId);
-    return NextResponse.json({ success: true, data });
+    if (!userId) return fail('UNAUTHORIZED', 'Authentication required', 401);
+    return ok(await ErpService.listEntities(userId));
   } catch (error: any) {
-    return NextResponse.json({ error: 'ERP_LIST_ERROR', message: error.message }, { status: 400 });
+    return fail('ERP_LIST_ERROR', error.message, 400);
   }
 }

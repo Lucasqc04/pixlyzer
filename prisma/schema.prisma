@@ -8,13 +8,17 @@ datasource db {
 }
 
 model User {
-  id            String   @id @default(uuid())
-  email         String   @unique
-  passwordHash  String
-  emailVerified Boolean  @default(false)
-  plan          Plan     @default(FREE)
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id                         String    @id @default(uuid())
+  email                      String    @unique
+  passwordHash               String
+  emailVerified              Boolean   @default(false)
+  emailVerificationCode      String?
+  emailVerificationExpiresAt DateTime?
+  emailVerificationAttempts  Int       @default(0)
+  emailVerifiedAt            DateTime?
+  plan                       Plan      @default(FREE)
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
 
   // Relations
   apiKeys                 ApiKey[]
@@ -24,6 +28,7 @@ model User {
   ownedStores             Store[]
   sentInvitations         StoreInvitation[]        @relation("InvitedBy")
   emailVerificationTokens EmailVerificationToken[]
+  auditLogs               AuditLog[]
 }
 
 model Store {
@@ -33,14 +38,16 @@ model Store {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  owner        User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members      StoreMember[]
-  invitations  StoreInvitation[]
-  customers    Customer[]
-  products     Product[]
-  sellers      Seller[]
-  sales        Sale[]
-  transactions Transaction[]
+  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members        StoreMember[]
+  invitations    StoreInvitation[]
+  customers      Customer[]
+  products       Product[]
+  sellers        Seller[]
+  sales          Sale[]
+  transactions   Transaction[]
+  stockMovements StockMovement[]
+  auditLogs      AuditLog[]
 
   @@index([ownerId])
 }
@@ -92,46 +99,68 @@ model EmailVerificationToken {
 }
 
 model Customer {
-  id        String   @id @default(uuid())
-  storeId   String
-  name      String
-  email     String?
-  phone     String?
-  document  String?
-  notes     String?
-  createdAt DateTime @default(now())
+  id           String   @id @default(uuid())
+  storeId      String
+  name         String
+  email        String?
+  phone        String?
+  document     String?
+  documentType String?
+  notes        String?
+  cep          String?
+  street       String?
+  streetNumber String?
+  complement   String?
+  district     String?
+  city         String?
+  state        String?
+  tags         String[] @default([])
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
-  store Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  sales Sale[]
+  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sales   Sale[]
+  uploads Upload[]
 
   @@index([storeId])
 }
 
 model Product {
-  id        String   @id @default(uuid())
-  storeId   String
-  name      String
-  sku       String?
-  price     Float
-  cost      Float?
-  stock     Int      @default(0)
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(uuid())
+  storeId       String
+  name          String
+  sku           String?
+  price         Float
+  cost          Float?
+  stock         Int      @default(0)
+  active        Boolean  @default(true)
+  description   String?
+  internalNotes String?
+  minStock      Int      @default(0)
+  category      String?
+  unit          String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  saleItems SaleItem[]
+  store         Store           @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  saleItems     SaleItem[]
+  StockMovement StockMovement[]
 
   @@index([storeId])
 }
 
 model Seller {
-  id        String   @id @default(uuid())
-  storeId   String
-  name      String
-  email     String?
-  phone     String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id             String   @id @default(uuid())
+  storeId        String
+  name           String
+  email          String?
+  phone          String?
+  active         Boolean  @default(true)
+  commissionRate Float?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   store Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
   sales Sale[]
@@ -140,22 +169,28 @@ model Seller {
 }
 
 model Sale {
-  id         String            @id @default(uuid())
-  storeId    String
-  customerId String?
-  sellerId   String?
-  total      Float
-  discount   Float             @default(0)
-  notes      String?
-  saleDate   DateTime          @default(now())
-  source     TransactionSource @default(MANUAL)
-  createdAt  DateTime          @default(now())
+  id            String            @id @default(uuid())
+  storeId       String
+  customerId    String?
+  sellerId      String?
+  total         Float
+  discount      Float             @default(0)
+  notes         String?
+  status        String            @default("CONFIRMED")
+  paymentMethod String?
+  freight       Float             @default(0)
+  saleDate      DateTime          @default(now())
+  source        TransactionSource @default(MANUAL)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
-  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  seller       Seller?       @relation(fields: [sellerId], references: [id], onDelete: SetNull)
-  items        SaleItem[]
-  transactions Transaction[]
+  store               Store                 @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer            Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  seller              Seller?               @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  items               SaleItem[]
+  transactions        Transaction[]
+  uploads             Upload[]              @relation("SaleUploads")
+  PossibleUploadMatch PossibleUploadMatch[]
 
   @@index([storeId])
   @@index([saleDate])
@@ -186,13 +221,65 @@ model Transaction {
   amount      Float
   paidAt      DateTime          @default(now())
   reference   String?
+  category    String?
+  status      String            @default("CONFIRMED")
+  notes       String?
   createdAt   DateTime          @default(now())
 
-  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
-  sale  Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  store   Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sale    Sale?    @relation(fields: [saleId], references: [id], onDelete: SetNull)
+  uploads Upload[] @relation("TransactionUploads")
 
   @@index([storeId])
   @@index([paidAt])
+}
+
+model PossibleUploadMatch {
+  id              String   @id @default(uuid())
+  uploadId        String
+  saleId          String
+  confidenceScore Int
+  ignored         Boolean  @default(false)
+  createdAt       DateTime @default(now())
+
+  upload Upload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+  sale   Sale   @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
+  @@index([uploadId])
+  @@index([saleId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String
+  storeId    String?
+  entityType String
+  entityId   String
+  action     String
+  changes    Json?
+  createdAt  DateTime @default(now())
+
+  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  store Store? @relation(fields: [storeId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([userId])
+}
+
+model StockMovement {
+  id        String            @id @default(uuid())
+  productId String
+  storeId   String
+  type      StockMovementType
+  quantity  Int
+  reference String?
+  createdAt DateTime          @default(now())
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  store   Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([storeId])
 }
 
 model ApiKey {
@@ -213,22 +300,31 @@ model ApiKey {
 }
 
 model Upload {
-  id        String    @id @default(uuid())
-  userId    String
-  valor     Float?
-  data      DateTime?
-  banco     String?
-  pagador   String?
-  recebedor String?
-  txId      String?
-  rawText   String?
-  fileName  String?
-  fileType  String?
-  imageData String?   @db.Text
-  createdAt DateTime  @default(now())
+  id                  String             @id @default(uuid())
+  userId              String
+  valor               Float?
+  data                DateTime?
+  banco               String?
+  pagador             String?
+  recebedor           String?
+  txId                String?
+  rawText             String?
+  fileName            String?
+  fileType            String?
+  imageData           String?            @db.Text
+  createdAt           DateTime           @default(now())
+  reviewStatus        UploadReviewStatus @default(PENDING)
+  matchStatus         UploadMatchStatus  @default(NONE)
+  customerId          String?
+  linkedSaleId        String?
+  linkedTransactionId String?
 
   // Relations
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  customer          Customer?             @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  linkedSale        Sale?                 @relation("SaleUploads", fields: [linkedSaleId], references: [id], onDelete: SetNull)
+  linkedTransaction Transaction?          @relation("TransactionUploads", fields: [linkedTransactionId], references: [id], onDelete: SetNull)
+  possibleMatches   PossibleUploadMatch[]
 
   @@index([userId])
   @@index([createdAt])
@@ -284,4 +380,22 @@ enum TransactionKind {
 enum TransactionSource {
   OCR_PIX
   MANUAL
+}
+
+enum StockMovementType {
+  SALE
+  ADJUSTMENT
+  RETURN
+}
+
+enum UploadReviewStatus {
+  PENDING
+  REVIEWED
+  ARCHIVED
+}
+
+enum UploadMatchStatus {
+  NONE
+  SUGGESTED
+  CONFIRMED
 }

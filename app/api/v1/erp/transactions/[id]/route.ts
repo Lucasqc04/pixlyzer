@@ -1,0 +1,2 @@
+import { NextRequest } from 'next/server';import { ErpService } from '@/lib/services/erpService';import { fail, ok } from '@/lib/apiResponse';
+export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) { try { const userId = request.headers.get('x-user-id'); if (!userId) return fail('UNAUTHORIZED','Authentication required',401); return ok(await ErpService.updateTransaction(userId, params.id, await request.json())); } catch (e:any) { return fail('ERP_TRANSACTION_UPDATE_ERROR', e.message, 400);} }

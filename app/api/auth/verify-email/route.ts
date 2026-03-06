@@ -1,19 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token');
+export async function POST(request: NextRequest) {
+  const body = await request.json();
+  const { email, code } = body;
+  if (!email || !code) return NextResponse.json({ ok: false, success: false, error: { code: 'VALIDATION_ERROR', message: 'Email e código são obrigatórios' } }, { status: 400 });
 
-  if (!token) return NextResponse.json({ error: 'TOKEN_REQUIRED' }, { status: 400 });
+  const user = await prisma.user.findUnique({ where: { email } });
+  if (!user) return NextResponse.json({ ok: false, success: false, error: { code: 'NOT_FOUND', message: 'Usuário não encontrado' } }, { status: 404 });
+  if (user.emailVerified) return NextResponse.json({ ok: true, success: true, data: { verified: true } });
 
-  const verification = await prisma.emailVerificationToken.findUnique({ where: { token } });
-
-  if (!verification || verification.expiresAt < new Date()) {
-    return NextResponse.json({ error: 'INVALID_OR_EXPIRED_TOKEN' }, { status: 400 });
+  if ((user.emailVerificationAttempts || 0) >= 5) {
+    return NextResponse.json({ ok: false, success: false, error: { code: 'TOO_MANY_ATTEMPTS', message: 'Muitas tentativas. Solicite novo código.' } }, { status: 429 });
   }
 
-  await prisma.user.update({ where: { id: verification.userId }, data: { emailVerified: true } });
-  await prisma.emailVerificationToken.delete({ where: { id: verification.id } });
+  const now = new Date();
+  if (!user.emailVerificationCode || !user.emailVerificationExpiresAt || user.emailVerificationExpiresAt < now) {
+    return NextResponse.json({ ok: false, success: false, error: { code: 'CODE_EXPIRED', message: 'Código expirado' } }, { status: 400 });
+  }
 
-  return NextResponse.redirect(new URL('/dashboard?emailVerified=1', request.url));
+  if (user.emailVerificationCode !== String(code)) {
+    await prisma.user.update({ where: { id: user.id }, data: { emailVerificationAttempts: { increment: 1 } } });
+    return NextResponse.json({ ok: false, success: false, error: { code: 'INVALID_CODE', message: 'Código inválido' } }, { status: 400 });
+  }
+
+  await prisma.user.update({ where: { id: user.id }, data: { emailVerified: true, emailVerifiedAt: now, emailVerificationCode: null, emailVerificationExpiresAt: null, emailVerificationAttempts: 0 } });
+
+  return NextResponse.json({ ok: true, success: true, data: { verified: true } });
 }

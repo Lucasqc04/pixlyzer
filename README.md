@@ -438,4 +438,9 @@ SMTP_FROM="Pixlyzer ERP <seu-email@gmail.com>"
 
 ### Verificação de e-mail
 
-- `GET /api/auth/verify-email?token=...`
+- `POST /api/auth/verify-email` (código de 6 dígitos)
+- `POST /api/auth/resend-verification-code`
+
+## Documentação ERP/API
+
+A documentação completa das rotas de autenticação, ERP e OCR está em `docs/API.md` e na tela interna `/dashboard/api`.

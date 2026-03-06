@@ -1,3 +1,5 @@
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { UsageService } from '@/lib/services/usageService';
 import { logErrorSafe } from '@/lib/utils/logging';

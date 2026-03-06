@@ -62,10 +62,13 @@ export class AuthService {
 
     const passwordHash = await this.hashPassword(data.password);
 
+    const verificationCode = EmailService.generateVerificationCode();
     const user = await prisma.user.create({
       data: {
         email: data.email,
         passwordHash,
+        emailVerificationCode: verificationCode,
+        emailVerificationExpiresAt: new Date(Date.now() + 10 * 60 * 1000),
       },
     });
 
@@ -83,15 +86,7 @@ export class AuthService {
       },
     });
 
-    const verificationToken = EmailService.generateToken();
-    await prisma.emailVerificationToken.create({
-      data: {
-        userId: user.id,
-        token: verificationToken,
-        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
-      },
-    });
-    await EmailService.sendVerificationEmail(user.email, verificationToken);
+    await EmailService.sendVerificationCodeEmail(user.email, verificationCode);
 
     const authUser: AuthUser = {
       id: user.id,
