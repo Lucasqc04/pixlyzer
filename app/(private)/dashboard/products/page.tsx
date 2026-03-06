@@ -1,12 +1,17 @@
 'use client';
+
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMemo } from 'react';
 import toast from 'react-hot-toast';
+import { Plus } from 'lucide-react';
 import { useErpData } from '@/components/erp/useErpData';
-import { PageHeader, EmptyState } from '@/components/erp/shared';
+import { EmptyState, PageHeader, TableToolbar } from '@/components/erp/shared';
 import { formatCurrency } from '@/lib/utils';
 import { DataTable } from '@/components/erp/DataTable';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 
 export default function ProductsPage() {
   const { data, loading, refresh } = useErpData();
@@ -14,17 +19,81 @@ export default function ProductsPage() {
   const params = useSearchParams();
   const q = params.get('q') || '';
   const low = params.get('low') === '1';
-  const setParam = (k: string, v: string) => { const n = new URLSearchParams(params.toString()); v ? n.set(k, v) : n.delete(k); router.replace(`/dashboard/products?${n.toString()}`); };
 
-  const rows = useMemo(() => (data?.products || []).filter((p: any) => (!q || p.name.toLowerCase().includes(q.toLowerCase()) || (p.sku || '').toLowerCase().includes(q.toLowerCase())) && (!low || p.stock <= p.minStock)), [data, q, low]);
-  const archive = async (id: string) => { if (!confirm('Inativar produto?')) return; const res = await fetch(`/api/v1/erp/products/${id}`, { method: 'DELETE' }); if (!res.ok) return toast.error('Falha ao inativar'); toast.success('Produto inativado'); refresh(); };
+  const setParam = (k: string, v: string) => {
+    const n = new URLSearchParams(params.toString());
+    if (v) n.set(k, v);
+    else n.delete(k);
+    router.replace(`/dashboard/products?${n.toString()}`);
+  };
 
-  return <div className='space-y-4'><PageHeader title='Produtos' subtitle='Catálogo, custo, estoque e status.' actions={<Link className='underline text-sm' href='/dashboard/products/new'>Novo produto</Link>} />
-    <div className='flex flex-wrap gap-2'><input value={q} onChange={(e)=>setParam('q',e.target.value)} className='border rounded px-3 h-9' placeholder='Buscar por nome/SKU' /><label className='text-sm flex items-center gap-1'><input type='checkbox' checked={low} onChange={(e)=>setParam('low',e.target.checked?'1':'')} />estoque baixo</label></div>
-    {loading ? <div className='h-36 bg-white border rounded animate-pulse'/> : !rows.length ? <EmptyState title='Nenhum produto encontrado' description='Crie um produto para iniciar a operação.'/> : <DataTable rows={rows} columns={[
-      { key:'name', label:'Nome', render:(r:any)=><Link className='underline' href={`/dashboard/products/${r.id}`}>{r.name}</Link>},
-      { key:'sku', label:'SKU' }, { key:'category', label:'Categoria' }, { key:'price', label:'Preço', render:(r:any)=>formatCurrency(r.price) }, { key:'stock', label:'Estoque' }, { key:'active', label:'Status', render:(r:any)=>r.active?'Ativo':'Inativo' },
-      { key:'actions', label:'Ações', render:(r:any)=><div className='flex gap-2'><Link href={`/dashboard/products/${r.id}`} className='underline'>Editar</Link><button className='underline text-red-600' onClick={()=>archive(r.id)}>Arquivar</button></div>}
-    ]} />}
-  </div>;
+  const rows = useMemo(
+    () =>
+      (data?.products || []).filter(
+        (p: any) =>
+          (!q || p.name.toLowerCase().includes(q.toLowerCase()) || (p.sku || '').toLowerCase().includes(q.toLowerCase())) &&
+          (!low || p.stock <= p.minStock)
+      ),
+    [data, q, low]
+  );
+
+  const archive = async (id: string) => {
+    if (!window.confirm('Inativar produto?')) return;
+    const res = await fetch(`/api/v1/erp/products/${id}`, { method: 'DELETE' });
+    if (!res.ok) return toast.error('Falha ao inativar produto');
+    toast.success('Produto arquivado com sucesso');
+    refresh();
+  };
+
+  return (
+    <div className="space-y-4">
+      <PageHeader
+        title="Produtos"
+        subtitle="Catálogo, custo, estoque e status."
+        actions={
+          <Button asChild>
+            <Link href="/dashboard/products/new"><Plus className="mr-1 h-4 w-4" />Novo produto</Link>
+          </Button>
+        }
+      />
+
+      <TableToolbar>
+        <Input value={q} onChange={(e) => setParam('q', e.target.value)} className="sm:max-w-xs" placeholder="Buscar por nome ou SKU" />
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={low} onChange={(e) => setParam('low', e.target.checked ? '1' : '')} />
+          Apenas estoque baixo
+        </label>
+      </TableToolbar>
+
+      <DataTable
+        rows={rows}
+        loading={loading}
+        emptyState={
+          <EmptyState
+            title="Sem produtos cadastrados"
+            description="Cadastre seu primeiro produto para iniciar o controle de estoque."
+            action={<Button asChild><Link href="/dashboard/products/new">Cadastrar primeiro produto</Link></Button>}
+          />
+        }
+        columns={[
+          { key: 'name', label: 'Nome', render: (r: any) => <Link className="font-medium text-blue-700 hover:underline" href={`/dashboard/products/${r.id}`}>{r.name}</Link> },
+          { key: 'sku', label: 'SKU' },
+          { key: 'category', label: 'Categoria' },
+          { key: 'price', label: 'Preço', render: (r: any) => formatCurrency(r.price) },
+          { key: 'stock', label: 'Estoque' },
+          { key: 'active', label: 'Status', render: (r: any) => <Badge variant={r.active ? 'default' : 'secondary'}>{r.active ? 'Ativo' : 'Inativo'}</Badge> },
+          {
+            key: 'actions',
+            label: 'Ações',
+            render: (r: any) => (
+              <div className="flex gap-2">
+                <Button size="sm" variant="outline" asChild><Link href={`/dashboard/products/${r.id}`}>Editar</Link></Button>
+                <Button size="sm" variant="danger" onClick={() => archive(r.id)}>Arquivar</Button>
+              </div>
+            ),
+          },
+        ]}
+      />
+    </div>
+  );
 }
