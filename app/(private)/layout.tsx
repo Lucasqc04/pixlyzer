@@ -16,6 +16,7 @@ import {
   X,
   Zap,
   FileText,
+  Store,
 } from 'lucide-react';
 
 interface User {
@@ -73,6 +74,7 @@ export default function PrivateLayout({
     { href: '/dashboard/uploads', label: 'Histórico de Uploads', icon: FileText },
     { href: '/dashboard/api-keys', label: 'API Keys', icon: Key },
     { href: '/dashboard/payments', label: 'Pagamentos', icon: CreditCard },
+    { href: '/dashboard/erp', label: 'ERP', icon: Store },
     { href: '/dashboard/upgrade', label: 'Upgrade', icon: Zap },
     { href: '/settings', label: 'Configurações', icon: Settings },
   ];
