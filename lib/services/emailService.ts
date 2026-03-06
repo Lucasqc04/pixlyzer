@@ -1,38 +1,27 @@
 import crypto from 'crypto';
 
-interface EmailPayload {
-  to: string;
-  subject: string;
-  html: string;
-}
+interface EmailPayload { to: string; subject: string; html: string; }
 
 export class EmailService {
   private static async sendViaSmtp(payload: EmailPayload) {
     const host = process.env.SMTP_HOST || 'smtp.gmail.com';
     const user = process.env.SMTP_USER;
-
-    if (!user) {
-      console.info('SMTP não configurado. Simulação de envio:', payload.subject, payload.to);
-      return;
-    }
-
-    // Placeholder para SMTP real (Google SMTP): host/credenciais já suportados por variáveis de ambiente.
-    // Em ambientes sem cliente SMTP disponível, registramos no log para rastreabilidade.
+    if (!user) { console.info('SMTP não configurado. Simulação de envio:', payload.subject, payload.to); console.info(payload.html); return; }
     console.info(`SMTP(${host}) -> ${payload.to}: ${payload.subject}`);
     console.info(payload.html);
   }
 
-  static generateToken() {
-    return crypto.randomBytes(24).toString('hex');
+  static generateToken() { return crypto.randomBytes(24).toString('hex'); }
+
+  static generateVerificationCode() {
+    return String(Math.floor(100000 + Math.random() * 900000));
   }
 
-  static async sendVerificationEmail(email: string, token: string) {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const link = `${appUrl}/api/auth/verify-email?token=${token}`;
+  static async sendVerificationCodeEmail(email: string, code: string) {
     await this.sendViaSmtp({
       to: email,
-      subject: 'Verifique seu e-mail no Pixlyzer ERP',
-      html: `<p>Olá!</p><p>Confirme seu e-mail clicando no botão abaixo:</p><p><a href="${link}">Verificar e-mail</a></p><p>Este link expira em 24h.</p>`,
+      subject: 'Seu código de verificação Pixlyzer',
+      html: `<p>Seu código de verificação é:</p><h2 style="letter-spacing:4px">${code}</h2><p>Expira em 10 minutos.</p>`,
     });
   }
 
