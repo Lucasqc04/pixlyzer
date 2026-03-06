@@ -124,12 +124,8 @@ function OnboardingModal({ open, onClose }: { open: boolean; onClose: () => void
             <Button variant="ghost" onClick={close}>
               Pular
             </Button>
-            <Button variant="outline" asChild>
-              <Link href="/dashboard/upload" onClick={close}>Novo upload</Link>
-            </Button>
-            <Button asChild>
-              <Link href="/dashboard/sales/new" onClick={close}>Começar tour</Link>
-            </Button>
+            <Link href="/dashboard/upload" onClick={close}><Button variant="outline">Novo upload</Button></Link>
+            <Link href="/dashboard/sales/new" onClick={close}><Button>Começar tour</Button></Link>
           </div>
         </CardContent>
       </Card>

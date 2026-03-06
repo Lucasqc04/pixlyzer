@@ -19,9 +19,7 @@ export default function DashboardPage() {
         title="Dashboard Executivo"
         subtitle="KPIs de vendas, financeiro, OCR e estoque em um só lugar."
         actions={
-          <Button asChild>
-            <Link href="/dashboard/sales/new">Nova venda</Link>
-          </Button>
+          <Link href="/dashboard/sales/new"><Button>Nova venda</Button></Link>
         }
       />
 
@@ -51,7 +49,7 @@ export default function DashboardPage() {
               <EmptyState
                 title="Sem produtos suficientes"
                 description="Cadastre produtos e realize vendas para gerar ranking."
-                action={<Button asChild size="sm"><Link href="/dashboard/products/new">Cadastrar produto</Link></Button>}
+                action={<Link href="/dashboard/products/new"><Button size="sm">Cadastrar produto</Button></Link>}
               />
             )}
           </CardContent>
@@ -112,7 +110,7 @@ export default function DashboardPage() {
                 icon={<AlertCircle className="h-5 w-5" />}
                 title="Sem comprovantes"
                 description="Comece enviando seu primeiro comprovante PIX."
-                action={<Button asChild size="sm"><Link href="/dashboard/upload">Enviar comprovante</Link></Button>}
+                action={<Link href="/dashboard/upload"><Button size="sm">Enviar comprovante</Button></Link>}
               />
             )}
           </CardContent>

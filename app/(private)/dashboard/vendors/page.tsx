@@ -48,12 +48,12 @@ export default function Vendors() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Vendedores" subtitle="Equipe comercial e comissão." actions={<Button asChild><Link href="/dashboard/vendors/new"><Plus className="mr-1 h-4 w-4" />Novo vendedor</Link></Button>} />
+      <PageHeader title="Vendedores" subtitle="Equipe comercial e comissão." actions={<Link href="/dashboard/vendors/new"><Button><Plus className="mr-1 h-4 w-4" />Novo vendedor</Button></Link>} />
       <TableToolbar><Input className="sm:max-w-xs" placeholder="Buscar vendedor" value={q} onChange={(e) => setQ(e.target.value)} /></TableToolbar>
       <DataTable
         rows={rows}
         loading={loading}
-        emptyState={<EmptyState title="Sem vendedores" description="Cadastre sua equipe comercial." action={<Button asChild><Link href="/dashboard/vendors/new">Cadastrar vendedor</Link></Button>} />}
+        emptyState={<EmptyState title="Sem vendedores" description="Cadastre sua equipe comercial." action={<Link href="/dashboard/vendors/new"><Button>Cadastrar vendedor</Button></Link>} />}
         columns={[
           { key: 'name', label: 'Nome', render: (r: any) => <Link href={`/dashboard/vendors/${r.id}`} className="font-medium text-blue-700 hover:underline">{r.name}</Link> },
           { key: 'phone', label: 'Telefone' },

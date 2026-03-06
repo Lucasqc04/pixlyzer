@@ -51,9 +51,7 @@ export default function ProductsPage() {
         title="Produtos"
         subtitle="Catálogo, custo, estoque e status."
         actions={
-          <Button asChild>
-            <Link href="/dashboard/products/new"><Plus className="mr-1 h-4 w-4" />Novo produto</Link>
-          </Button>
+          <Link href="/dashboard/products/new"><Button><Plus className="mr-1 h-4 w-4" />Novo produto</Button></Link>
         }
       />
 
@@ -72,7 +70,7 @@ export default function ProductsPage() {
           <EmptyState
             title="Sem produtos cadastrados"
             description="Cadastre seu primeiro produto para iniciar o controle de estoque."
-            action={<Button asChild><Link href="/dashboard/products/new">Cadastrar primeiro produto</Link></Button>}
+            action={<Link href="/dashboard/products/new"><Button>Cadastrar primeiro produto</Button></Link>}
           />
         }
         columns={[
@@ -87,7 +85,7 @@ export default function ProductsPage() {
             label: 'Ações',
             render: (r: any) => (
               <div className="flex gap-2">
-                <Button size="sm" variant="outline" asChild><Link href={`/dashboard/products/${r.id}`}>Editar</Link></Button>
+                <Link href={`/dashboard/products/${r.id}`}><Button size="sm" variant="outline">Editar</Button></Link>
                 <Button size="sm" variant="danger" onClick={() => archive(r.id)}>Arquivar</Button>
               </div>
             ),

@@ -39,12 +39,12 @@ export default function Customers() {
 
   return (
     <div className="space-y-4">
-      <PageHeader title="Clientes" subtitle="Base de relacionamento e histórico." actions={<Button asChild><Link href="/dashboard/customers/new"><Plus className="mr-1 h-4 w-4" />Novo cliente</Link></Button>} />
+      <PageHeader title="Clientes" subtitle="Base de relacionamento e histórico." actions={<Link href="/dashboard/customers/new"><Button><Plus className="mr-1 h-4 w-4" />Novo cliente</Button></Link>} />
       <TableToolbar><Input className="sm:max-w-xs" placeholder="Buscar cliente" value={q} onChange={(e) => setQ(e.target.value)} /></TableToolbar>
       <DataTable
         rows={rows}
         loading={loading}
-        emptyState={<EmptyState title="Sem clientes" description="Adicione seu primeiro cliente para iniciar a operação." action={<Button asChild><Link href="/dashboard/customers/new">Cadastrar cliente</Link></Button>} />}
+        emptyState={<EmptyState title="Sem clientes" description="Adicione seu primeiro cliente para iniciar a operação." action={<Link href="/dashboard/customers/new"><Button>Cadastrar cliente</Button></Link>} />}
         columns={[
           { key: 'name', label: 'Nome', render: (r: any) => <Link className="font-medium text-blue-700 hover:underline" href={`/dashboard/customers/${r.id}`}>{r.name}</Link> },
           { key: 'phone', label: 'Telefone' },

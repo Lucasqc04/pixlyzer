@@ -43,8 +43,8 @@ export default function BillingSettings() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button asChild size="lg"><Link href="/dashboard/upgrade">Fazer upgrade</Link></Button>
-            <Button asChild variant="outline"><Link href="/pricing">Comparar planos</Link></Button>
+            <Link href="/dashboard/upgrade"><Button size="lg">Fazer upgrade</Button></Link>
+            <Link href="/pricing"><Button variant="outline">Comparar planos</Button></Link>
           </div>
         </CardContent>
       </Card>
