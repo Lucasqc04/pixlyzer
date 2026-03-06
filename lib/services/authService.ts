@@ -2,6 +2,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
+import { EmailService } from './emailService';
 
 const JWT_SECRET = process.env.JWT_SECRET!;
 
@@ -67,6 +68,30 @@ export class AuthService {
         passwordHash,
       },
     });
+
+    await prisma.store.create({
+      data: {
+        name: `Loja de ${data.email.split('@')[0]}`,
+        ownerId: user.id,
+        members: {
+          create: {
+            userId: user.id,
+            role: 'OWNER',
+            permissions: ['*'],
+          },
+        },
+      },
+    });
+
+    const verificationToken = EmailService.generateToken();
+    await prisma.emailVerificationToken.create({
+      data: {
+        userId: user.id,
+        token: verificationToken,
+        expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 24),
+      },
+    });
+    await EmailService.sendVerificationEmail(user.email, verificationToken);
 
     const authUser: AuthUser = {
       id: user.id,

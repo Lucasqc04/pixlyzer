@@ -55,6 +55,26 @@ export class UploadService {
       }
     }
 
+
+    const membership = await prisma.storeMember.findFirst({
+      where: { userId },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    if (membership && valorNormalizado) {
+      await prisma.transaction.create({
+        data: {
+          storeId: membership.storeId,
+          kind: 'INCOME',
+          source: 'OCR_PIX',
+          description: `PIX OCR ${parsedData.txId || fileName}`,
+          amount: valorNormalizado,
+          reference: parsedData.txId || undefined,
+          paidAt: dataToSave || new Date(),
+        },
+      });
+    }
+
     const upload = await prisma.upload.create({
       data: {
         userId,

@@ -393,3 +393,49 @@ MIT
 ## Suporte
 
 Para suporte, envie um email para suporte@pixlyzer.vercel.app
+
+## Pixlyzer ERP (novo)
+
+Agora a plataforma também funciona como ERP completo para lojistas, mantendo o diferencial da leitura de comprovantes PIX.
+
+### Recursos ERP
+
+- Cadastro de **produtos**, **clientes**, **vendedores** e **equipe da loja**
+- Registro de **vendas** com itens, vendedor e cliente
+- Registro de **transações manuais** (entradas/saídas)
+- Convites para usuários com **roles/permissões**
+- Dashboard com gráficos de vendas mensais e entradas vs saídas
+- OCR PIX gera transação financeira automática no ERP (`source: OCR_PIX`)
+
+### Verificação de e-mail e SMTP
+
+Configure SMTP (Gmail ou outro provedor) para:
+
+- Verificação de e-mail no cadastro
+- Envio de convite para colaboradores
+
+Variáveis:
+
+```env
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT="587"
+SMTP_USER="seu-email@gmail.com"
+SMTP_PASS="sua-senha-app"
+SMTP_FROM="Pixlyzer ERP <seu-email@gmail.com>"
+```
+
+### Endpoints ERP (autenticados)
+
+- `GET /api/v1/erp/all`
+- `GET /api/v1/erp/dashboard`
+- `POST /api/v1/erp/products`
+- `POST /api/v1/erp/customers`
+- `POST /api/v1/erp/sellers`
+- `POST /api/v1/erp/sales`
+- `POST /api/v1/erp/transactions`
+- `POST /api/v1/erp/team/invite`
+- `POST /api/v1/erp/team/accept`
+
+### Verificação de e-mail
+
+- `GET /api/auth/verify-email?token=...`

@@ -11,6 +11,7 @@ const publicRoutes = [
   '/docs',
   '/api/auth/login',
   '/api/auth/register',
+  '/api/auth/verify-email',
   '/api/v1/webhooks/paguebit',
 ];
 

@@ -8,38 +8,212 @@ datasource db {
 }
 
 model User {
-  id           String    @id @default(uuid())
-  email        String    @unique
-  passwordHash String
-  plan         Plan      @default(FREE)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  
+  id            String   @id @default(uuid())
+  email         String   @unique
+  passwordHash  String
+  emailVerified Boolean  @default(false)
+  plan          Plan     @default(FREE)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
   // Relations
-  apiKeys      ApiKey[]
-  uploads      Upload[]
-  payments     Payment[]
+  apiKeys                 ApiKey[]
+  uploads                 Upload[]
+  payments                Payment[]
+  storeMemberships        StoreMember[]
+  ownedStores             Store[]
+  sentInvitations         StoreInvitation[]        @relation("InvitedBy")
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model Store {
+  id        String   @id @default(uuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner        User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members      StoreMember[]
+  invitations  StoreInvitation[]
+  customers    Customer[]
+  products     Product[]
+  sellers      Seller[]
+  sales        Sale[]
+  transactions Transaction[]
+
+  @@index([ownerId])
+}
+
+model StoreMember {
+  id          String    @id @default(uuid())
+  storeId     String
+  userId      String
+  role        StoreRole @default(VIEWER)
+  permissions String[]  @default([])
+  createdAt   DateTime  @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, userId])
+  @@index([userId])
+}
+
+model StoreInvitation {
+  id          String    @id @default(uuid())
+  storeId     String
+  email       String
+  role        StoreRole @default(VIEWER)
+  permissions String[]  @default([])
+  token       String    @unique
+  invitedById String
+  acceptedAt  DateTime?
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+
+  store     Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  invitedBy User  @relation("InvitedBy", fields: [invitedById], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([email])
+}
+
+model EmailVerificationToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Customer {
+  id        String   @id @default(uuid())
+  storeId   String
+  name      String
+  email     String?
+  phone     String?
+  document  String?
+  notes     String?
+  createdAt DateTime @default(now())
+
+  store Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sales Sale[]
+
+  @@index([storeId])
+}
+
+model Product {
+  id        String   @id @default(uuid())
+  storeId   String
+  name      String
+  sku       String?
+  price     Float
+  cost      Float?
+  stock     Int      @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  store     Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  saleItems SaleItem[]
+
+  @@index([storeId])
+}
+
+model Seller {
+  id        String   @id @default(uuid())
+  storeId   String
+  name      String
+  email     String?
+  phone     String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  store Store  @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sales Sale[]
+
+  @@index([storeId])
+}
+
+model Sale {
+  id         String            @id @default(uuid())
+  storeId    String
+  customerId String?
+  sellerId   String?
+  total      Float
+  discount   Float             @default(0)
+  notes      String?
+  saleDate   DateTime          @default(now())
+  source     TransactionSource @default(MANUAL)
+  createdAt  DateTime          @default(now())
+
+  store        Store         @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  seller       Seller?       @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+  items        SaleItem[]
+  transactions Transaction[]
+
+  @@index([storeId])
+  @@index([saleDate])
+}
+
+model SaleItem {
+  id        String @id @default(uuid())
+  saleId    String
+  productId String
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  @@index([saleId])
+  @@index([productId])
+}
+
+model Transaction {
+  id          String            @id @default(uuid())
+  storeId     String
+  saleId      String?
+  kind        TransactionKind
+  source      TransactionSource @default(MANUAL)
+  description String
+  amount      Float
+  paidAt      DateTime          @default(now())
+  reference   String?
+  createdAt   DateTime          @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  sale  Sale? @relation(fields: [saleId], references: [id], onDelete: SetNull)
+
+  @@index([storeId])
+  @@index([paidAt])
 }
 
 model ApiKey {
-  id           String   @id @default(uuid())
-  keyHash      String   @unique
+  id           String    @id @default(uuid())
+  keyHash      String    @unique
   userId       String
-  usage        Int      @default(0)
-  monthlyLimit Int      @default(10)
-  revoked      Boolean  @default(false)
-  createdAt    DateTime @default(now())
+  usage        Int       @default(0)
+  monthlyLimit Int       @default(10)
+  revoked      Boolean   @default(false)
+  createdAt    DateTime  @default(now())
   lastUsedAt   DateTime?
-  
+
   // Relations
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([keyHash])
   @@index([userId])
 }
 
 model Upload {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
   valor     Float?
   data      DateTime?
@@ -50,31 +224,31 @@ model Upload {
   rawText   String?
   fileName  String?
   fileType  String?
-  imageData String?  @db.Text
-  createdAt DateTime @default(now())
-  
+  imageData String?   @db.Text
+  createdAt DateTime  @default(now())
+
   // Relations
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([createdAt])
 }
 
 model Payment {
-  id                String   @id @default(uuid())
+  id                String        @id @default(uuid())
   userId            String
-  paguebitPaymentId String   @unique
+  paguebitPaymentId String        @unique
   status            PaymentStatus @default(PENDING)
   amount            Float
   qrCodeUrl         String?
   qrCopyPaste       String?
   observation       String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
   // Relations
-  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId])
   @@index([paguebitPaymentId])
   @@index([status])
@@ -92,4 +266,22 @@ enum PaymentStatus {
   REJECTED
   CANCELLED
   REFUNDED
+}
+
+enum StoreRole {
+  OWNER
+  MANAGER
+  SELLER
+  FINANCE
+  VIEWER
+}
+
+enum TransactionKind {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionSource {
+  OCR_PIX
+  MANUAL
 }
