@@ -1,5 +1,74 @@
 'use client';
-import { FormEvent, useState } from 'react';import toast from 'react-hot-toast';import { useRouter } from 'next/navigation';import { Input } from '@/components/ui/input';import { PageHeader, SubmitButton } from '@/components/erp/shared';
-const initial={name:'',sku:'',price:'0',cost:'0',stock:'0',minStock:'0',category:'',unit:'UN',description:'',internalNotes:'',active:true};
-export default function ProductNewPage(){const router=useRouter();const [loading,setLoading]=useState(false);const [f,setF]=useState(initial);const onSubmit=async(e:FormEvent)=>{e.preventDefault();setLoading(true);const r=await fetch('/api/v1/erp/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...f,price:Number(f.price),cost:Number(f.cost),stock:Number(f.stock),minStock:Number(f.minStock)})});setLoading(false);if(!r.ok)return toast.error('Erro ao salvar');toast.success('Produto salvo');router.push('/dashboard/products');};
-return <div className='space-y-4'><PageHeader title='Novo produto' subtitle='Inclua dados comerciais e de estoque.'/><form onSubmit={onSubmit} className='bg-white border rounded p-4 space-y-3'><div className='grid md:grid-cols-2 gap-2'><Input required placeholder='Nome' value={f.name} onChange={e=>setF({...f,name:e.target.value})}/><Input placeholder='SKU' value={f.sku} onChange={e=>setF({...f,sku:e.target.value})}/></div><div className='grid md:grid-cols-4 gap-2'><Input type='number' step='0.01' placeholder='Preço' value={f.price} onChange={e=>setF({...f,price:e.target.value})}/><Input type='number' step='0.01' placeholder='Custo' value={f.cost} onChange={e=>setF({...f,cost:e.target.value})}/><Input type='number' placeholder='Estoque' value={f.stock} onChange={e=>setF({...f,stock:e.target.value})}/><Input type='number' placeholder='Estoque mínimo' value={f.minStock} onChange={e=>setF({...f,minStock:e.target.value})}/></div><div className='grid md:grid-cols-2 gap-2'><Input placeholder='Categoria' value={f.category} onChange={e=>setF({...f,category:e.target.value})}/><Input placeholder='Unidade (UN/KG)' value={f.unit} onChange={e=>setF({...f,unit:e.target.value})}/></div><Input placeholder='Descrição' value={f.description} onChange={e=>setF({...f,description:e.target.value})}/><Input placeholder='Observação interna' value={f.internalNotes} onChange={e=>setF({...f,internalNotes:e.target.value})}/><label className='text-sm flex items-center gap-2'><input type='checkbox' checked={f.active} onChange={e=>setF({...f,active:e.target.checked})}/>Produto ativo</label><SubmitButton loading={loading}>Salvar produto</SubmitButton></form></div>}
+
+import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
+import { PageHeader, SubmitButton } from '@/components/erp/shared';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+
+export default function NewProductPage() {
+  const [loading, setLoading] = useState(false);
+  const [f, setF] = useState({
+    name: '', sku: '', price: '', cost: '', stock: '', minStock: '', category: '', unit: '', description: '', internalNotes: '', active: true,
+  });
+  const router = useRouter();
+
+  const toNumber = (v: string) => Number(v.replace(',', '.')) || 0;
+
+  const onSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    const r = await fetch('/api/v1/erp/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...f, price: toNumber(f.price), cost: toNumber(f.cost), stock: toNumber(f.stock), minStock: toNumber(f.minStock) }),
+    });
+    setLoading(false);
+    if (!r.ok) return toast.error('Erro ao criar produto');
+    toast.success('Produto criado com sucesso');
+    router.push('/dashboard/products');
+  };
+
+  return (
+    <div className="space-y-4">
+      <PageHeader title="Novo produto" subtitle="Inclua dados comerciais e de estoque com clareza." />
+      <Card>
+        <CardContent className="pt-6">
+          <form onSubmit={onSubmit} className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><Label>Nome *</Label><Input required placeholder="Ex: Refrigerante 2L" value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} /></div>
+              <div className="space-y-2"><Label>SKU</Label><Input placeholder="Ex: REF-2L" value={f.sku} onChange={(e) => setF({ ...f, sku: e.target.value })} /></div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="space-y-2"><Label>Preço de venda</Label><NumberInput placeholder="Ex: 29,90" value={f.price} onChange={(e) => setF({ ...f, price: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Custo</Label><NumberInput placeholder="Ex: 18,00" value={f.cost} onChange={(e) => setF({ ...f, cost: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Estoque atual</Label><NumberInput placeholder="Ex: 150" value={f.stock} onChange={(e) => setF({ ...f, stock: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Estoque mínimo</Label><NumberInput placeholder="Ex: 20" value={f.minStock} onChange={(e) => setF({ ...f, minStock: e.target.value })} /></div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2"><Label>Categoria</Label><Input placeholder="Ex: Bebidas" value={f.category} onChange={(e) => setF({ ...f, category: e.target.value })} /></div>
+              <div className="space-y-2"><Label>Unidade</Label><Input placeholder="Ex: UN, KG, CX" value={f.unit} onChange={(e) => setF({ ...f, unit: e.target.value })} /></div>
+            </div>
+
+            <div className="space-y-2"><Label>Descrição</Label><Textarea placeholder="Descrição comercial do produto" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} /></div>
+            <div className="space-y-2"><Label>Observação interna</Label><Textarea placeholder="Anotações para operação interna" value={f.internalNotes} onChange={(e) => setF({ ...f, internalNotes: e.target.value })} /></div>
+
+            <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={f.active} onChange={(e) => setF({ ...f, active: e.target.checked })} />Produto ativo</label>
+
+            <div className="flex flex-wrap gap-2">
+              <SubmitButton loading={loading}>Salvar produto</SubmitButton>
+              <Button variant="outline" type="button" onClick={() => router.back()}>Cancelar</Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
