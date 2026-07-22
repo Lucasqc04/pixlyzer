@@ -1,247 +1,122 @@
-# Pixlyzer - Organizador Inteligente de Comprovantes PIX
+<div align="center">
 
-SaaS B2C + API pública para extração automática de dados de comprovantes PIX usando OCR.
+# Pixlyzer
+
+**SaaS e API para extrair, organizar e consultar dados de comprovantes Pix com OCR e fallback por IA.**
+
+[![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.3-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Prisma-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
+[![Jest](https://img.shields.io/badge/tests-Jest-C21325?logo=jest&logoColor=white)](https://jestjs.io/)
+
+</div>
+
+## Sobre o projeto
+
+O **Pixlyzer** transforma imagens de comprovantes Pix em dados estruturados. O sistema combina OCR, normalização de texto, parsers específicos por banco, cálculo de confiança e fallback por múltiplos provedores de IA.
+
+Além da aplicação web, o projeto oferece uma **API pública autenticada por API key**, controle de uso por plano, rate limiting, dashboard e integração de pagamentos.
 
 ## Funcionalidades
 
-- **Upload de Comprovantes**: Arraste e solte ou selecione arquivos JPEG/PNG
-- **OCR Inteligente**: Extração automática de dados usando Tesseract.js
-- **Parser PIX**: Detecta valor, data, banco, nome e ID da transação
-- **Dashboard**: Visualize e organize todos seus comprovantes
-- **API Pública**: Integre com suas aplicações usando API Key
-- **Planos**: FREE (10 OCR/mês) e PRO (500 OCR/mês)
-- **Pagamentos**: Integração com Paguebit para upgrade automático
+- upload de comprovantes em JPEG e PNG;
+- extração automática de valor, data, banco, participantes e identificador da transação;
+- detecção do banco emissor;
+- parsers especializados por instituição;
+- confidence score por campo e por documento;
+- fallback por heurísticas locais e provedores de IA;
+- dashboard para organização e consulta de comprovantes;
+- API pública com autenticação por chave;
+- planos de uso e controle de limite mensal;
+- webhooks para ativação automática de planos;
+- exportação de dados e relatórios.
 
-## Stack Tecnológico
+## Fluxo de processamento
 
-- **Next.js 14** (App Router)
-- **TypeScript**
-- **Prisma ORM**
-- **PostgreSQL**
-- **Tailwind CSS**
-- **Tesseract.js** (OCR)
-- **Zod** (Validação)
-- **Bcrypt** (Hash de senhas)
-- **Jest** (Testes)
-
-## Módulo OCR Avançado
-
-O sistema possui um módulo OCR profissional com:
-
-### Arquitetura Modular
-
-```
-/lib
-  /ocr
-    ocrService.ts          # Processamento Tesseract.js
-    normalizeText.ts       # Normalização de texto OCR
-  /parser
-    parserOrchestrator.ts  # Orquestração do parsing
-    bankDetector.ts        # Detecção de banco
-    confidenceService.ts   # Cálculo de confidence score
-    /banks
-      index.ts             # Registro de parsers
-      bancoTemplate.ts     # Template para novos bancos
-      nubank.ts            # Parser Nubank
-      itau.ts              # Parser Itaú
-      bradesco.ts          # Parser Bradesco
-  /ai
-    aiFallbackService.ts   # Fallback com múltiplas IAs
-    aiSimpleService.ts     # Heurísticas locais (sem API)
-    /providers
-      baseProvider.ts      # Classe base para providers
-      groqProvider.ts      # Provider Groq
-      openrouterProvider.ts # Provider OpenRouter
-      huggingfaceProvider.ts # Provider HuggingFace
+```mermaid
+flowchart LR
+    A[Upload] --> B[Validação do arquivo]
+    B --> C[OCR]
+    C --> D[Normalização]
+    D --> E[Detecção do banco]
+    E --> F[Parser específico]
+    F --> G[Confidence score]
+    G -->|confiança suficiente| H[JSON estruturado]
+    G -->|baixa confiança| I[Fallback por IA]
+    I --> H
 ```
 
-### Fluxo de Processamento
+O pipeline foi projetado para priorizar processamento determinístico e usar IA apenas quando a confiança da extração tradicional não é suficiente.
 
-1. **Upload** → Validação de segurança (5MB max, JPEG/PNG)
-2. **OCR** → Tesseract.js extrai texto
-3. **Normalização** → Limpa e padroniza texto
-4. **Detecção de Banco** → Identifica o banco
-5. **Parser Específico** → Extrai dados do banco
-6. **Confidence Score** → Calcula confiança (0-1)
-7. **Fallback IA** → Se confidence < 0.8, usa IA
-8. **Retorno** → JSON estruturado
+## Arquitetura
 
-### Confidence Score
+```text
+app/
+├── (public)/              login, cadastro, preços e documentação
+├── (private)/             dashboard e configurações
+└── api/v1/                OCR, API keys, uso, pagamentos e webhooks
 
-| Campo | Peso |
-|-------|------|
-| valor | 0.3 |
-| data | 0.3 |
-| txId | 0.2 |
-| pagador | 0.1 |
-| recebedor | 0.1 |
+lib/
+├── ocr/                   processamento e normalização
+├── parser/                orquestração e parsers por banco
+├── ai/                    fallback e provedores de IA
+└── services/              autenticação, uso, upload e pagamentos
 
-**Threshold**: 0.8 (80% de confiança)
+prisma/
+└── schema.prisma          modelo relacional da aplicação
+```
 
-### Fallback de IA
+### Parsers extensíveis
 
-Ordem de tentativa:
-1. **AI Simple** (heurísticas locais, sem API)
-2. **Groq** (Llama 3, gratuito)
-3. **OpenRouter** (múltiplos modelos)
-4. **HuggingFace** (open-source)
-
-### Adicionar Novo Banco
-
-1. Crie arquivo em `/lib/parser/banks/{nome}.ts`
-2. Implemente `BankParser` interface
-3. Adicione ao array em `/lib/parser/banks/index.ts`
+Cada instituição pode possuir um parser isolado, implementando uma interface comum. Isso permite adicionar suporte a novos layouts sem acoplar regras específicas ao pipeline principal.
 
 ```typescript
 export const meuBancoParser: BankParser = {
   bankName: 'MEU_BANCO',
-  detect(text) { /* ... */ },
-  parse(text) { /* ... */ },
+  detect(text) {
+    // identifica o comprovante
+  },
+  parse(text) {
+    // retorna os campos estruturados
+  },
 };
 ```
 
-### Testes
-
-```bash
-# Executar todos os testes
-npm test
-
-# Executar com watch
-npm run test:watch
-
-# Cobertura
-npm run test:coverage
-```
-
-## Estrutura do Projeto
-
-```
-/app
-  /(public)          # Rotas públicas
-    /login
-    /register
-    /pricing
-    /docs
-  /(private)         # Rotas protegidas
-    /dashboard
-    /settings
-  /api               # API Routes
-    /auth
-    /v1
-      /ocr
-      /apikey
-      /usage
-      /payments
-      /webhooks
-/lib
-  /services          # Regras de negócio
-    authService.ts
-    ocrService.ts
-    pixParserService.ts
-    apiKeyService.ts
-    usageService.ts
-    paguebitService.ts
-    uploadService.ts
-/prisma
-  schema.prisma
-```
-
-## Configuração
-
-### 1. Clone e Instale
-
-```bash
-git clone <repo>
-cd pixlyzer
-npm install
-```
-
-### 2. Configure as Variáveis de Ambiente
-
-```bash
-cp .env.example .env.local
-```
-
-Edite o arquivo `.env.local`:
-
-```env
-# Database
-DATABASE_URL="postgresql://user:password@localhost:5432/pixlyzer?schema=public"
-
-# JWT Secret
-JWT_SECRET="your-super-secret-jwt-key-change-in-production"
-
-# Paguebit API
-PAGUEBIT_API_TOKEN="your-paguebit-api-token"
-
-# App URL
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-
-# Environment
-NODE_ENV="development"
-
-# AI Providers (optional - system works without them)
-GROQ_API_KEY="your-groq-api-key"
-OPENROUTER_API_KEY="your-openrouter-api-key"
-HUGGINGFACE_API_KEY="your-huggingface-api-key"
-```
-
-### 3. Configure o Banco de Dados
-
-```bash
-npx prisma migrate dev
-npx prisma generate
-```
-
-### 4. Execute o Projeto
-
-```bash
-npm run dev
-```
-
-Acesse: http://localhost:3000
-
-## Configuração do Paguebit
-
-1. Crie uma conta em [Paguebit](https://paguebit.com)
-2. Gere uma API Token no painel
-3. Adicione o token ao `.env.local`
-4. Configure o webhook URL no painel do Paguebit:
-   ```
-   https://seudominio.com/api/v1/webhooks/paguebit
-   ```
-
-## API Pública
+## API pública
 
 ### Autenticação
 
-Inclua sua API key no header:
+Envie sua chave no cabeçalho:
 
-```
+```http
 x-api-key: sk_live_xxxxx
 ```
 
-### Endpoint OCR
+### Processar comprovante
 
-```bash
+```http
 POST /api/v1/ocr
 Content-Type: multipart/form-data
-
-file: <arquivo>
 ```
 
-### Resposta
+Campo esperado:
+
+```text
+file: comprovante.png
+```
+
+Exemplo de resposta:
 
 ```json
 {
   "success": true,
   "data": {
     "banco": "NUBANK",
-    "valor": 150.50,
-    "data": "2024-01-15",
+    "valor": 150.5,
+    "data": "2026-01-15",
     "pagador": "João Silva",
     "recebedor": "Maria Silva",
-    "txId": "ABC123DEF456GHI789JKL012MNO345PQ",
+    "txId": "ABC123DEF456",
     "confidence": 0.95
   },
   "meta": {
@@ -251,196 +126,93 @@ file: <arquivo>
 }
 ```
 
-### Códigos de Erro
-
-| Código | Status | Descrição |
-|--------|--------|-----------|
-| API_KEY_REQUIRED | 401 | Header x-api-key não fornecido |
-| INVALID_KEY_FORMAT | 401 | Formato da API key inválido |
-| INVALID_KEY | 401 | API key inválida ou revogada |
-| LIMIT_EXCEEDED | 429 | Limite mensal de OCR excedido |
-| RATE_LIMIT_EXCEEDED | 429 | Rate limit por minuto excedido |
-| FILE_REQUIRED | 400 | Nenhum arquivo enviado |
-| INVALID_FILE_TYPE | 400 | Tipo de arquivo não suportado |
-| INVALID_FILE_NAME | 400 | Nome de arquivo inválido |
-| IMAGE_TOO_LARGE | 400 | Imagem maior que 5MB |
-| EMPTY_BUFFER | 400 | Buffer vazio |
-| UNKNOWN_IMAGE_TYPE | 400 | Tipo de imagem não detectado |
-| OCR_LOW_CONFIDENCE | 422 | Confiança do OCR muito baixa |
-| OCR_ERROR | 500 | Erro no processamento OCR |
-| INTERNAL_ERROR | 500 | Erro interno do servidor |
-
-## Planos
-
-### FREE
-- 10 OCR por mês
-- Dashboard básico
-- API pública
-
-### PRO - R$ 29,90/mês
-- 500 OCR por mês
-- Dashboard completo
-- Suporte prioritário
-- Acesso ilimitado
-
-## Deploy na Vercel
-
-1. Push para GitHub
-2. Importe o projeto na [Vercel](https://vercel.com)
-3. Configure as variáveis de ambiente
-4. Deploy!
-
-### Variáveis de Ambiente na Vercel
-
-```
-DATABASE_URL=<sua-url-do-postgresql>
-JWT_SECRET=<segredo-jwt>
-PAGUEBIT_API_TOKEN=<token-paguebit>
-NEXT_PUBLIC_APP_URL=<url-do-deploy>
-
-# Opcionais - para fallback de IA
-GROQ_API_KEY=<sua-groq-key>
-OPENROUTER_API_KEY=<sua-openrouter-key>
-HUGGINGFACE_API_KEY=<sua-huggingface-key>
-```
-
-### Banco de Dados na Vercel
-
-Use um serviço como:
-- [Neon](https://neon.tech) (PostgreSQL serverless)
-- [Supabase](https://supabase.com)
-- [Railway](https://railway.app)
-
-## Arquitetura
-
-### Services
-
-Cada service encapsula uma regra de negócio:
-
-#### Core Services
-- **AuthService**: Autenticação e autorização
-- **ApiKeyService**: Gerenciamento de API keys
-- **UsageService**: Estatísticas e limites de uso
-- **PaguebitService**: Integração com pagamentos
-- **UploadService**: Processamento completo de uploads
-
-#### OCR Services
-- **OCRService**: Processamento de imagens com Tesseract.js
-- **NormalizeText**: Normalização de texto OCR
-- **ParserOrchestrator**: Orquestração do fluxo de parsing
-- **BankDetector**: Detecção de banco pelo texto
-- **ConfidenceService**: Cálculo de confidence score
-
-#### AI Services
-- **AIFallbackService**: Orquestra fallback entre providers
-- **AISimpleService**: Heurísticas locais (sem API)
-- **GroqProvider**: Provider Groq (Llama 3)
-- **OpenRouterProvider**: Provider OpenRouter
-- **HuggingFaceProvider**: Provider HuggingFace
-
-### Middleware
-
-O middleware (`middleware.ts`) protege rotas privadas e valida API keys:
-
-- Rotas públicas: `/login`, `/register`, `/pricing`, `/docs`
-- Rotas da API pública: `/api/v1/ocr`
-- Rotas privadas: Requerem cookie `auth-token`
-
-### Webhook Paguebit
-
-O endpoint `/api/v1/webhooks/paguebit` processa:
-
-- `payment.created`: Atualiza status
-- `payment.status_changed`: Atualiza status e ativa plano PRO se aprovado
-
 ## Segurança
 
-### Autenticação
-- Senhas hasheadas com bcrypt (12 rounds)
-- API keys hasheadas e únicas
-- JWT com expiração de 7 dias
-- Cookies httpOnly e secure
+- senhas protegidas com bcrypt;
+- API keys armazenadas de forma segura;
+- autenticação com JWT e cookies `httpOnly`;
+- validação de payloads com Zod;
+- limite de tamanho e validação real do tipo de arquivo;
+- sanitização de nomes e entradas;
+- processamento de imagens em memória;
+- rate limiting por chave e por IP;
+- timeouts para OCR e integrações externas;
+- respostas de produção sem stack trace;
+- redução de dados sensíveis em logs.
 
-### Upload
-- Limite máximo: 5MB
-- Tipos permitidos: JPEG, PNG
-- Validação por magic numbers (não confia em extensão)
-- Nome de arquivo sanitizado
-- Nunca salva arquivo em disco
+## Stack
 
-### OCR
-- Processamento apenas em memória
-- Buffer destruído após uso
-- Timeout de 30 segundos
-- Validação de confiança mínima (30%)
+- **Frontend e servidor:** Next.js 14, React e TypeScript;
+- **Banco de dados:** PostgreSQL e Prisma ORM;
+- **UI:** Tailwind CSS e componentes Radix;
+- **OCR:** Tesseract e node-tesseract-ocr;
+- **Validação e segurança:** Zod, bcrypt e JWT/Jose;
+- **Testes:** Jest e ts-jest;
+- **Relatórios:** jsPDF, XLSX e JSZip;
+- **Gráficos:** Recharts.
 
-### API
-- Rate limiting por API key (10 req/min)
-- Rate limiting por IP
-- Sanitização de inputs com Zod
-- Nenhum stack trace em produção
-- Timeout de 10s para chamadas de IA
+## Executando localmente
 
-### IA
-- AbortController para cancelar requisições
-- Não loga textos completos em produção
-- Fallback automático entre providers
+### Requisitos
 
-## Licença
+- Node.js 18 ou superior;
+- PostgreSQL;
+- npm.
 
-MIT
-
-## Suporte
-
-Para suporte, envie um email para suporte@pixlyzer.vercel.app
-
-## Pixlyzer ERP (novo)
-
-Agora a plataforma também funciona como ERP completo para lojistas, mantendo o diferencial da leitura de comprovantes PIX.
-
-### Recursos ERP
-
-- Cadastro de **produtos**, **clientes**, **vendedores** e **equipe da loja**
-- Registro de **vendas** com itens, vendedor e cliente
-- Registro de **transações manuais** (entradas/saídas)
-- Convites para usuários com **roles/permissões**
-- Dashboard com gráficos de vendas mensais e entradas vs saídas
-- OCR PIX gera transação financeira automática no ERP (`source: OCR_PIX`)
-
-### Verificação de e-mail e SMTP
-
-Configure SMTP (Gmail ou outro provedor) para:
-
-- Verificação de e-mail no cadastro
-- Envio de convite para colaboradores
-
-Variáveis:
-
-```env
-SMTP_HOST="smtp.gmail.com"
-SMTP_PORT="587"
-SMTP_USER="seu-email@gmail.com"
-SMTP_PASS="sua-senha-app"
-SMTP_FROM="Pixlyzer ERP <seu-email@gmail.com>"
+```bash
+git clone https://github.com/Lucasqc04/pixlyzer.git
+cd pixlyzer
+npm install
+cp .env.example .env.local
 ```
 
-### Endpoints ERP (autenticados)
+Configure as variáveis de ambiente:
 
-- `GET /api/v1/erp/all`
-- `GET /api/v1/erp/dashboard`
-- `POST /api/v1/erp/products`
-- `POST /api/v1/erp/customers`
-- `POST /api/v1/erp/sellers`
-- `POST /api/v1/erp/sales`
-- `POST /api/v1/erp/transactions`
-- `POST /api/v1/erp/team/invite`
-- `POST /api/v1/erp/team/accept`
+```env
+DATABASE_URL="postgresql://user:password@localhost:5432/pixlyzer"
+JWT_SECRET="substitua-por-um-segredo-forte"
+NEXT_PUBLIC_APP_URL="http://localhost:3000"
 
-### Verificação de e-mail
+# Integração de pagamentos
+PAGUEBIT_API_TOKEN=""
 
-- `POST /api/auth/verify-email` (código de 6 dígitos)
-- `POST /api/auth/resend-verification-code`
+# Fallbacks opcionais de IA
+GROQ_API_KEY=""
+OPENROUTER_API_KEY=""
+HUGGINGFACE_API_KEY=""
+```
 
-## Documentação ERP/API
+Prepare o banco e inicie a aplicação:
 
-A documentação completa das rotas de autenticação, ERP e OCR está em `docs/API.md` e na tela interna `/dashboard/api`.
+```bash
+npm run db:generate
+npm run db:migrate
+npm run dev
+```
+
+Acesse `http://localhost:3000`.
+
+## Testes e qualidade
+
+```bash
+npm test
+npm run test:coverage
+npm run build
+```
+
+## Scripts principais
+
+| Comando | Descrição |
+|---|---|
+| `npm run dev` | inicia o ambiente de desenvolvimento |
+| `npm run build` | gera o Prisma Client e o build de produção |
+| `npm test` | executa os testes |
+| `npm run test:coverage` | gera relatório de cobertura |
+| `npm run db:migrate` | executa migrations locais |
+| `npm run db:studio` | abre o Prisma Studio |
+
+## Autor
+
+Desenvolvido por **[Lucas Quinteiro Campos](https://github.com/Lucasqc04)**.
+
+[LinkedIn](https://www.linkedin.com/in/lucas-quinteiro-2071022a4/) · [Outros projetos](https://github.com/Lucasqc04)
